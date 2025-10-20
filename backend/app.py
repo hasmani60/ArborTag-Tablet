@@ -114,82 +114,58 @@ def analyze_distribution():
         return jsonify({"error": str(e)}), 500
 
 # ============================================================================
-# MODEL 2: From python_heatmap_png1.py
+# MODEL 2: From python_heatmap_png1.py (Static PNG version for mobile)
 # ============================================================================
-
-def add_matching_gradient_legend_to_map(folium_map, title, vmin, vmax):
-    """EXACT function from python_heatmap_png1.py"""
-    colors = ['#00FF00', '#FFFF00', '#FFA500', '#FF0000']  # green to red
-    colormap = LinearColormap(colors, vmin=vmin, vmax=vmax)
-    colormap.caption = title
-    folium_map.add_child(colormap)
-
-@app.route('/analyze/heatmap', methods=['POST'])
-def analyze_heatmap():
-    """Carbon sequestration heatmap - adapted from python_heatmap_png1.py
-    Returns HTML instead of PNG for better mobile compatibility"""
-    try:
-        file = request.files['file']
-        data = pd.read_csv(file)
-
-        # Prepare data for the heatmap
-        heat_data = [[row['lat'], row['long'], row['carbon_seq']] for index, row in data.iterrows()]
-
-        # Create the map centered around the average coordinates with increased zoom level
-        map_center = [data['lat'].mean(), data['long'].mean()]
-        heatmap_map = folium.Map(location=map_center, zoom_start=15)
-
-        # Add HeatMap to the map
-        HeatMap(heat_data,
-                min_opacity=0.3,
-                max_opacity=0.8,
-                radius=25,
-                blur=15,
-                gradient={0.0: '#00FF00', 0.4: '#FFFF00', 0.7: '#FFA500', 1.0: '#FF0000'}).add_to(heatmap_map)
-
-        # Add the matching gradient legend to the map
-        add_matching_gradient_legend_to_map(heatmap_map, "Carbon Sequestration Level",
-                                           data['carbon_seq'].min(),
-                                           data['carbon_seq'].max())
-
-        # Save the map as HTML
-        output_path = os.path.join(TEMP_DIR, 'carbon_seq_heatmap.html')
-        heatmap_map.save(output_path)
-
-        return send_file(output_path, mimetype='text/html')
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze/heatmap_static', methods=['POST'])
 def analyze_heatmap_static():
-    """Alternative: Static scatter plot heatmap (works without folium)"""
+    """Carbon sequestration heatmap - PNG version for mobile display"""
     try:
         file = request.files['file']
         data = pd.read_csv(file)
 
-        plt.figure(figsize=(16, 12))
+        # Create figure with better sizing for mobile
+        fig, ax = plt.subplots(figsize=(12, 10))
+
+        # Normalize carbon values for color mapping
+        norm = plt.Normalize(vmin=data['carbon_seq'].min(), vmax=data['carbon_seq'].max())
 
         # Create scatter plot with carbon sequestration as color
-        scatter = plt.scatter(data['long'], data['lat'],
+        scatter = ax.scatter(data['long'], data['lat'],
                             c=data['carbon_seq'],
-                            s=data['carbon_seq']*10,
+                            s=data['carbon_seq']*8,  # Size based on carbon
                             cmap='RdYlGn_r',  # Red-Yellow-Green reversed
-                            alpha=0.6,
+                            alpha=0.7,
                             edgecolors='black',
-                            linewidth=0.5)
+                            linewidth=0.8,
+                            norm=norm)
 
-        plt.colorbar(scatter, label='Carbon Sequestration (kg CO₂/year)', pad=0.02)
+        # Add colorbar
+        cbar = plt.colorbar(scatter, ax=ax, pad=0.02)
+        cbar.set_label('Carbon Sequestration (kg CO₂/year)', fontsize=12, fontweight='bold')
 
-        plt.xlabel('Longitude', fontsize=16, fontweight='bold')
-        plt.ylabel('Latitude', fontsize=16, fontweight='bold')
-        plt.title('Carbon Sequestration Heatmap', fontsize=20, fontweight='bold', pad=20)
+        # Set labels and title
+        ax.set_xlabel('Longitude', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Latitude', fontsize=14, fontweight='bold')
+        ax.set_title('Carbon Sequestration Heatmap', fontsize=18, fontweight='bold', pad=15)
 
-        plt.grid(True, alpha=0.3, linestyle='--')
+        # Add grid
+        ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
+
+        # Add text annotation with stats
+        total_carbon = data['carbon_seq'].sum()
+        avg_carbon = data['carbon_seq'].mean()
+        ax.text(0.02, 0.98,
+                f'Total: {total_carbon:.1f} kg CO₂/yr\nAvg: {avg_carbon:.1f} kg CO₂/yr',
+                transform=ax.transAxes,
+                verticalalignment='top',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                fontsize=10)
+
         plt.tight_layout()
 
         output_path = os.path.join(TEMP_DIR, 'carbon_heatmap_static.png')
-        plt.savefig(output_path, dpi=150, facecolor='white')
+        plt.savefig(output_path, dpi=120, facecolor='white', bbox_inches='tight')
         plt.close()
 
         return send_file(output_path, mimetype='image/png')
@@ -198,99 +174,66 @@ def analyze_heatmap_static():
         return jsonify({"error": str(e)}), 500
 
 # ============================================================================
-# MODEL 3: From python_diversity_png1.py
+# MODEL 3: From python_diversity_png1.py (Static PNG version for mobile)
 # ============================================================================
-
-def create_colormap(unique_values):
-    """EXACT function from python_diversity_png1.py"""
-    colors = list(mcolors.TABLEAU_COLORS.values())  # Using Tableau's color scheme
-    color_count = len(colors)
-    colormap = {value: colors[i % color_count] for i, value in enumerate(unique_values)}
-    return colormap
-
-def plot_points_with_legend(map_obj, data, colormap, column_name):
-    """EXACT function from python_diversity_png1.py"""
-    for _, row in data.iterrows():
-        folium.CircleMarker(
-            location=[row['lat'], row['long']],
-            radius=5,
-            color=colormap[row[column_name]],
-            fill=True,
-            fill_color=colormap[row[column_name]],
-            fill_opacity=0.7
-        ).add_to(map_obj)
-
-    legend_html = '''<div style="position: fixed; bottom: 50px; left: 50px; width: 220px;
-                    height: auto; background-color: white; border:2px solid grey; z-index:9999;
-                    padding: 5px;"><h4 style="margin-top: 0;">{}</h4>'''.format(column_name)
-    for name, color in colormap.items():
-        legend_html += '<i style="background: {}; width: 25px; height: 18px; margin-left: 20px; \
-                        display: inline-block; vertical-align: middle;"></i> {}<br>'.format(color, name)
-    legend_html += '</div>'
-    map_obj.get_root().html.add_child(folium.Element(legend_html))
-
-@app.route('/analyze/diversity', methods=['POST'])
-def analyze_diversity():
-    """Species diversity map - from python_diversity_png1.py
-    Returns HTML map with color-coded species"""
-    try:
-        file = request.files['file']
-        data = pd.read_csv(file)
-
-        # Create a color map
-        unique_scientific_names = data['scientific_name'].unique()
-        scientific_name_colormap = create_colormap(unique_scientific_names)
-
-        # Create the map centered around the average coordinates with a higher zoom level
-        map_center = [data['lat'].mean(), data['long'].mean()]
-        map_with_points = folium.Map(location=map_center, zoom_start=15)
-
-        # Plot points with a legend
-        plot_points_with_legend(map_with_points, data, scientific_name_colormap, "scientific_name")
-
-        # Save the map as HTML
-        output_path = os.path.join(TEMP_DIR, 'diversity.html')
-        map_with_points.save(output_path)
-
-        return send_file(output_path, mimetype='text/html')
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze/diversity_static', methods=['POST'])
 def analyze_diversity_static():
-    """Alternative: Static diversity scatter plot"""
+    """Species diversity map - PNG version for mobile display"""
     try:
         file = request.files['file']
         data = pd.read_csv(file)
 
-        plt.figure(figsize=(16, 12))
+        # Create figure with better sizing for mobile
+        fig, ax = plt.subplots(figsize=(12, 10))
 
-        # Create color map using Tableau colors
-        unique_species = data['scientific_name'].unique()
-        colors = list(mcolors.TABLEAU_COLORS.values())
-        color_map = {species: colors[i % len(colors)] for i, species in enumerate(unique_species)}
+        # Get unique species and assign colors (using Tableau)
+        unique_species = sorted(data['scientific_name'].unique())
+        tableau_colors = list(mcolors.TABLEAU_COLORS.values())
+        color_map = {species: tableau_colors[i % len(tableau_colors)]
+                     for i, species in enumerate(unique_species)}
 
-        # Plot each species with its color
+        # Plot each species with its assigned color
         for species in unique_species:
             species_data = data[data['scientific_name'] == species]
-            plt.scatter(species_data['long'], species_data['lat'],
-                       c=color_map[species],
-                       label=species,
-                       s=50,
-                       alpha=0.7,
-                       edgecolors='black',
-                       linewidth=0.5)
+            ax.scatter(species_data['long'], species_data['lat'],
+                      c=color_map[species],
+                      label=species,
+                      s=80,
+                      alpha=0.7,
+                      edgecolors='black',
+                      linewidth=0.8)
 
-        plt.xlabel('Longitude', fontsize=16, fontweight='bold')
-        plt.ylabel('Latitude', fontsize=16, fontweight='bold')
-        plt.title('Species Diversity Map', fontsize=20, fontweight='bold', pad=20)
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
-        plt.grid(True, alpha=0.3, linestyle='--')
+        # Set labels and title
+        ax.set_xlabel('Longitude', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Latitude', fontsize=14, fontweight='bold')
+        ax.set_title('Species Diversity Map', fontsize=18, fontweight='bold', pad=15)
+
+        # Add legend
+        legend = ax.legend(bbox_to_anchor=(1.02, 1),
+                          loc='upper left',
+                          fontsize=9,
+                          framealpha=0.95,
+                          edgecolor='black')
+        legend.set_title('Species', prop={'size': 10, 'weight': 'bold'})
+
+        # Add grid
+        ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
+
+        # Add text annotation with stats
+        total_trees = len(data)
+        num_species = len(unique_species)
+        ax.text(0.02, 0.98,
+                f'Total Trees: {total_trees}\nSpecies: {num_species}',
+                transform=ax.transAxes,
+                verticalalignment='top',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                fontsize=10)
+
         plt.tight_layout()
 
         output_path = os.path.join(TEMP_DIR, 'diversity_static.png')
-        plt.savefig(output_path, dpi=150, facecolor='white')
+        plt.savefig(output_path, dpi=120, facecolor='white', bbox_inches='tight')
         plt.close()
 
         return send_file(output_path, mimetype='image/png')
@@ -413,10 +356,8 @@ if __name__ == '__main__':
     print("  GET  /health")
     print("\n  Analysis Models:")
     print("  POST /analyze/distribution       - From python_distribution.py")
-    print("  POST /analyze/heatmap            - From python_heatmap_png1.py (HTML)")
-    print("  POST /analyze/heatmap_static     - Alternative static heatmap (PNG)")
-    print("  POST /analyze/diversity          - From python_diversity_png1.py (HTML)")
-    print("  POST /analyze/diversity_static   - Alternative static diversity (PNG)")
+    print("  POST /analyze/heatmap_static     - Carbon heatmap (PNG)")
+    print("  POST /analyze/diversity_static   - Diversity map (PNG)")
     print("  POST /analyze/height             - Height bar chart")
     print("  POST /analyze/width              - Width bar chart")
     print("  POST /analyze/stats              - Statistical summary")
