@@ -37,7 +37,7 @@ class DataAnalysisActivity : AppCompatActivity() {
 
             if (projects.isEmpty()) {
                 binding.tvNoProjects.visibility = View.VISIBLE
-                binding.scrollAnalysisOptions.visibility = View.GONE
+                binding.layoutAnalysisOptions.visibility = View.GONE
                 return@launch
             }
 
@@ -81,10 +81,10 @@ class DataAnalysisActivity : AppCompatActivity() {
                 val totalCarbon = database.treeDao().getTotalCarbon(projectId) ?: 0.0
 
                 binding.tvStatsContent.text = """
-                    🌳 Trees Tagged: $treeCount
-                    📏 Average Height: ${String.format("%.2f", avgHeight)} m
-                    📐 Average Width: ${String.format("%.2f", avgWidth)} m
-                    🌍 Total Carbon: ${String.format("%.2f", totalCarbon)} kg CO₂/year
+                    Trees Tagged: $treeCount
+                    Average Height: ${String.format("%.2f", avgHeight)} m
+                    Average Width: ${String.format("%.2f", avgWidth)} m
+                    Total Carbon: ${String.format("%.2f", totalCarbon)} kg CO₂/year
                 """.trimIndent()
 
                 binding.layoutStats.visibility = View.VISIBLE
@@ -111,16 +111,12 @@ class DataAnalysisActivity : AppCompatActivity() {
             generateAnalysis("width")
         }
 
-        binding.btnCarbonMap.setOnClickListener {
-            generateAnalysis("carbon_map")
-        }
-
-        binding.btnCanopy.setOnClickListener {
-            generateAnalysis("canopy")
+        binding.btnHeatmap.setOnClickListener {
+            generateAnalysis("heatmap_static")
         }
 
         binding.btnDiversity.setOnClickListener {
-            generateDiversityAnalysis()
+            generateAnalysis("diversity_static")
         }
 
         binding.btnSummary.setOnClickListener {
@@ -158,8 +154,8 @@ class DataAnalysisActivity : AppCompatActivity() {
                     "distribution" -> apiClient.getDistributionAnalysis(csvFile)
                     "height" -> apiClient.getHeightAnalysis(csvFile)
                     "width" -> apiClient.getWidthAnalysis(csvFile)
-                    "carbon_map" -> apiClient.getCarbonMapAnalysis(csvFile)
-                    "canopy" -> apiClient.getCanopyAnalysis(csvFile)
+                    "heatmap_static" -> apiClient.getHeatmapStaticAnalysis(csvFile)
+                    "diversity_static" -> apiClient.getDiversityStaticAnalysis(csvFile)
                     else -> null
                 }
 
@@ -168,11 +164,6 @@ class DataAnalysisActivity : AppCompatActivity() {
                     binding.ivAnalysisResult.setImageBitmap(bitmap)
                     binding.ivAnalysisResult.visibility = View.VISIBLE
                     binding.tvAnalysisResult.visibility = View.GONE
-
-                    // Scroll to show the result
-                    binding.nestedScrollView.post {
-                        binding.nestedScrollView.smoothScrollTo(0, binding.cardAnalysisResult.top)
-                    }
                 } else {
                     throw Exception("Failed to generate analysis")
                 }
@@ -184,54 +175,6 @@ class DataAnalysisActivity : AppCompatActivity() {
                 Toast.makeText(
                     this@DataAnalysisActivity,
                     "Analysis error: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    }
-
-    private fun generateDiversityAnalysis() {
-        val projectId = selectedProjectId
-        if (projectId == null) {
-            Toast.makeText(this, "Please select a project", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        binding.progressBar.visibility = View.VISIBLE
-        binding.ivAnalysisResult.visibility = View.GONE
-        binding.tvAnalysisResult.visibility = View.GONE
-
-        lifecycleScope.launch {
-            try {
-                val trees = database.treeDao().getTreesByProject(projectId)
-                if (trees.isEmpty()) {
-                    Toast.makeText(
-                        this@DataAnalysisActivity,
-                        "No data to analyze",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    binding.progressBar.visibility = View.GONE
-                    return@launch
-                }
-
-                val csvFile = createTempCsvFile(trees)
-                val diversity = apiClient.getDiversityAnalysis(csvFile)
-
-                binding.tvAnalysisResult.text = diversity
-                binding.tvAnalysisResult.visibility = View.VISIBLE
-                binding.ivAnalysisResult.visibility = View.GONE
-                binding.progressBar.visibility = View.GONE
-
-                // Scroll to show the result
-                binding.nestedScrollView.post {
-                    binding.nestedScrollView.smoothScrollTo(0, binding.cardAnalysisResult.top)
-                }
-
-            } catch (e: Exception) {
-                binding.progressBar.visibility = View.GONE
-                Toast.makeText(
-                    this@DataAnalysisActivity,
-                    "Diversity analysis error: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -269,11 +212,6 @@ class DataAnalysisActivity : AppCompatActivity() {
                 binding.tvAnalysisResult.visibility = View.VISIBLE
                 binding.ivAnalysisResult.visibility = View.GONE
                 binding.progressBar.visibility = View.GONE
-
-                // Scroll to show the result
-                binding.nestedScrollView.post {
-                    binding.nestedScrollView.smoothScrollTo(0, binding.cardAnalysisResult.top)
-                }
 
             } catch (e: Exception) {
                 binding.progressBar.visibility = View.GONE
