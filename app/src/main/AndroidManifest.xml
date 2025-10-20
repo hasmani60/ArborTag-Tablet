@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permissions will be added here -->
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -12,14 +12,14 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="true" />
 
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ArborTag">
+        android:theme="@style/Theme.ArborTag"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
@@ -54,6 +54,13 @@
         <activity
             android:name=".DataCurationActivity"
             android:label="Data Curation"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"/>
+
+        <activity
+            android:name=".DataAnalysisActivity"
+            android:label="Data Analysis"
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait"
             android:exported="false"/>
