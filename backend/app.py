@@ -16,6 +16,7 @@ import tempfile
 import folium
 from folium.plugins import HeatMap
 from branca.colormap import LinearColormap
+import contextily as cx
 
 app = Flask(__name__)
 CORS(app)
@@ -168,7 +169,7 @@ def analyze_heatmap():
 
 @app.route('/analyze/heatmap_static', methods=['POST'])
 def analyze_heatmap_static():
-    """Carbon sequestration heatmap - PNG version for mobile display"""
+    """Carbon sequestration heatmap - PNG version with map background"""
     try:
         file = request.files['file']
         data = pd.read_csv(file)
@@ -179,20 +180,21 @@ def analyze_heatmap_static():
         # Normalize carbon values for color mapping
         norm = plt.Normalize(vmin=data['carbon_seq'].min(), vmax=data['carbon_seq'].max())
 
-        # Calculate marker size - make it MUCH larger and consistent
-        # Use fixed large size with slight variation based on carbon
-        base_size = 300  # Much larger base size
-        sizes = base_size + (data['carbon_seq'] - data['carbon_seq'].min()) / (data['carbon_seq'].max() - data['carbon_seq'].min()) * 200
+        # Calculate marker size - make it larger and consistent
+        base_size = 300
+        sizes = base_size + (data['carbon_seq'] - data['carbon_seq'].min()) / \
+                (data['carbon_seq'].max() - data['carbon_seq'].min()) * 200
 
         # Create scatter plot with carbon sequestration as color
         scatter = ax.scatter(data['long'], data['lat'],
                             c=data['carbon_seq'],
-                            s=sizes,  # Much larger, varied sizes
+                            s=sizes,
                             cmap='RdYlGn_r',  # Red-Yellow-Green reversed
                             alpha=0.7,
                             edgecolors='black',
                             linewidth=1.5,
-                            norm=norm)
+                            norm=norm,
+                            zorder=5)  # Ensure markers are on top
 
         # Add colorbar
         cbar = plt.colorbar(scatter, ax=ax, pad=0.02, shrink=0.8)
@@ -200,19 +202,25 @@ def analyze_heatmap_static():
         cbar.ax.tick_params(labelsize=9)
 
         # Auto-zoom to data with padding
-        lat_margin = (data['lat'].max() - data['lat'].min()) * 0.1 or 0.001
-        long_margin = (data['long'].max() - data['long'].min()) * 0.1 or 0.001
+        lat_margin = (data['lat'].max() - data['lat'].min()) * 0.15 or 0.001
+        long_margin = (data['long'].max() - data['long'].min()) * 0.15 or 0.001
 
         ax.set_xlim(data['long'].min() - long_margin, data['long'].max() + long_margin)
         ax.set_ylim(data['lat'].min() - lat_margin, data['lat'].max() + lat_margin)
+
+        # Add OpenStreetMap basemap
+        try:
+            cx.add_basemap(ax, crs='EPSG:4326', source=cx.providers.OpenStreetMap.Mapnik,
+                          attribution=False, zoom='auto')
+        except Exception as e:
+            print(f"Warning: Could not add basemap: {e}")
+            # If basemap fails, add a grid as fallback
+            ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
 
         # Set labels and title
         ax.set_xlabel('Longitude', fontsize=14, fontweight='bold')
         ax.set_ylabel('Latitude', fontsize=14, fontweight='bold')
         ax.set_title('Carbon Sequestration Heatmap', fontsize=18, fontweight='bold', pad=15)
-
-        # Add grid
-        ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
 
         # Add text annotation with stats
         total_carbon = data['carbon_seq'].sum()
@@ -224,7 +232,8 @@ def analyze_heatmap_static():
                 verticalalignment='top',
                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.9, edgecolor='black'),
                 fontsize=10,
-                fontweight='bold')
+                fontweight='bold',
+                zorder=6)
 
         plt.tight_layout()
 
@@ -307,7 +316,7 @@ def analyze_diversity():
 
 @app.route('/analyze/diversity_static', methods=['POST'])
 def analyze_diversity_static():
-    """Species diversity map - PNG version for mobile display"""
+    """Species diversity map - PNG version with map background"""
     try:
         file = request.files['file']
         data = pd.read_csv(file)
@@ -327,10 +336,27 @@ def analyze_diversity_static():
             ax.scatter(species_data['long'], species_data['lat'],
                       c=color_map[species],
                       label=species,
-                      s=80,
-                      alpha=0.7,
+                      s=120,  # Larger markers
+                      alpha=0.8,
                       edgecolors='black',
-                      linewidth=0.8)
+                      linewidth=1.2,
+                      zorder=5)  # Ensure markers are on top
+
+        # Auto-zoom to data with padding
+        lat_margin = (data['lat'].max() - data['lat'].min()) * 0.15 or 0.001
+        long_margin = (data['long'].max() - data['long'].min()) * 0.15 or 0.001
+
+        ax.set_xlim(data['long'].min() - long_margin, data['long'].max() + long_margin)
+        ax.set_ylim(data['lat'].min() - lat_margin, data['lat'].max() + lat_margin)
+
+        # Add OpenStreetMap basemap
+        try:
+            cx.add_basemap(ax, crs='EPSG:4326', source=cx.providers.OpenStreetMap.Mapnik,
+                          attribution=False, zoom='auto')
+        except Exception as e:
+            print(f"Warning: Could not add basemap: {e}")
+            # If basemap fails, add a grid as fallback
+            ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
 
         # Set labels and title
         ax.set_xlabel('Longitude', fontsize=14, fontweight='bold')
@@ -342,11 +368,10 @@ def analyze_diversity_static():
                           loc='upper left',
                           fontsize=9,
                           framealpha=0.95,
-                          edgecolor='black')
+                          edgecolor='black',
+                          fancybox=True,
+                          shadow=True)
         legend.set_title('Species', prop={'size': 10, 'weight': 'bold'})
-
-        # Add grid
-        ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
 
         # Add text annotation with stats
         total_trees = len(data)
@@ -355,8 +380,10 @@ def analyze_diversity_static():
                 f'Total Trees: {total_trees}\nSpecies: {num_species}',
                 transform=ax.transAxes,
                 verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
-                fontsize=10)
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.9, edgecolor='black'),
+                fontsize=10,
+                fontweight='bold',
+                zorder=6)
 
         plt.tight_layout()
 
@@ -477,15 +504,17 @@ def analyze_summary():
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("ArborTag Backend API with All Your Models")
+    print("ArborTag Backend API with All Your Models + Map Backgrounds")
     print("=" * 60)
     print(f"Temporary directory: {TEMP_DIR}")
     print("\nAvailable endpoints:")
     print("  GET  /health")
     print("\n  Analysis Models:")
     print("  POST /analyze/distribution       - From python_distribution.py")
-    print("  POST /analyze/heatmap_static     - Carbon heatmap (PNG)")
-    print("  POST /analyze/diversity_static   - Diversity map (PNG)")
+    print("  POST /analyze/heatmap            - Carbon heatmap (Interactive HTML)")
+    print("  POST /analyze/heatmap_static     - Carbon heatmap (PNG with map)")
+    print("  POST /analyze/diversity          - Diversity map (Interactive HTML)")
+    print("  POST /analyze/diversity_static   - Diversity map (PNG with map)")
     print("  POST /analyze/height             - Height bar chart")
     print("  POST /analyze/width              - Width bar chart")
     print("  POST /analyze/stats              - Statistical summary")
