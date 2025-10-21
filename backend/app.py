@@ -118,6 +118,55 @@ def analyze_distribution():
 # MODEL 2: From python_heatmap_png1.py
 # ============================================================================
 
+def add_matching_gradient_legend_to_map(folium_map, title, vmin, vmax):
+    """EXACT function from python_heatmap_png1.py"""
+    colors = ['#00FF00', '#FFFF00', '#FFA500', '#FF0000']  # green to red
+    colormap = LinearColormap(colors, vmin=vmin, vmax=vmax)
+    colormap.caption = title
+    folium_map.add_child(colormap)
+
+@app.route('/analyze/heatmap', methods=['POST'])
+def analyze_heatmap():
+    """Carbon sequestration heatmap - Interactive HTML for mobile"""
+    try:
+        file = request.files['file']
+        data = pd.read_csv(file)
+
+        # Prepare data for the heatmap
+        heat_data = [[row['lat'], row['long'], row['carbon_seq']] for index, row in data.iterrows()]
+
+        # Create the map centered around the average coordinates
+        map_center = [data['lat'].mean(), data['long'].mean()]
+        heatmap_map = folium.Map(location=map_center, zoom_start=16,
+                                 tiles='OpenStreetMap',
+                                 control_scale=True)
+
+        # Add HeatMap to the map
+        HeatMap(heat_data,
+                min_opacity=0.3,
+                max_opacity=0.8,
+                radius=25,
+                blur=20,
+                gradient={0.0: '#00FF00', 0.4: '#FFFF00', 0.7: '#FFA500', 1.0: '#FF0000'}).add_to(heatmap_map)
+
+        # Add the matching gradient legend to the map
+        add_matching_gradient_legend_to_map(heatmap_map, "Carbon Sequestration Level (kg CO₂/year)",
+                                           data['carbon_seq'].min(),
+                                           data['carbon_seq'].max())
+
+        # Save the map as HTML
+        output_path = os.path.join(TEMP_DIR, 'carbon_seq_heatmap.html')
+        heatmap_map.save(output_path)
+
+        # Return HTML content
+        with open(output_path, 'r') as f:
+            html_content = f.read()
+
+        return html_content, 200, {'Content-Type': 'text/html'}
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/analyze/heatmap_static', methods=['POST'])
 def analyze_heatmap_static():
     """Carbon sequestration heatmap - PNG with visible map background like Folium"""
@@ -254,14 +303,14 @@ def create_colormap(unique_values):
     return colormap
 
 def plot_points_with_legend(map_obj, data, colormap, column_name):
-    """EXACT function from python_diversity_png1.py"""
+    """FIXED function from python_diversity_png1.py"""
     for _, row in data.iterrows():
         folium.CircleMarker(
             location=[row['lat'], row['long']],
             radius=8,
-            color=colormap[row[column_name]],
+            color=colormap[row['scientific_name']],  # FIXED: use actual column name
             fill=True,
-            fill_color=colormap[row[column_name]],
+            fill_color=colormap[row['scientific_name']],  # FIXED: use actual column name
             fill_opacity=0.7,
             weight=2
         ).add_to(map_obj)
@@ -294,8 +343,8 @@ def analyze_diversity():
                                      tiles='OpenStreetMap',
                                      control_scale=True)
 
-        # Plot points with a legend
-        plot_points_with_legend(map_with_points, data, scientific_name_colormap, "Scientific Names")
+        # Plot points with a legend - FIXED: pass display name only
+        plot_points_with_legend(map_with_points, data, scientific_name_colormap, "Species")
 
         # Save the map as HTML
         output_path = os.path.join(TEMP_DIR, 'diversity.html')
@@ -326,33 +375,35 @@ def analyze_diversity_static():
         color_map = {species: tableau_colors[i % len(tableau_colors)]
                      for i, species in enumerate(unique_species)}
 
-        # Plot each species with its assigned color
-        for species in unique_species:
-            species_data = data[data['scientific_name'] == species]
-            ax.scatter(species_data['long'], species_data['lat'],
-                      c=color_map[species],
-                      label=species,
-                      s=120,  # Larger markers
-                      alpha=0.8,
-                      edgecolors='black',
-                      linewidth=1.2,
-                      zorder=5)  # Ensure markers are on top
-
-        # Auto-zoom to data with padding
+        # Calculate bounds with padding
         lat_margin = (data['lat'].max() - data['lat'].min()) * 0.15 or 0.001
         long_margin = (data['long'].max() - data['long'].min()) * 0.15 or 0.001
 
         ax.set_xlim(data['long'].min() - long_margin, data['long'].max() + long_margin)
         ax.set_ylim(data['lat'].min() - lat_margin, data['lat'].max() + lat_margin)
 
-        # Add OpenStreetMap basemap
+        # Add OpenStreetMap basemap FIRST with full opacity
         try:
-            cx.add_basemap(ax, crs='EPSG:4326', source=cx.providers.OpenStreetMap.Mapnik,
-                          attribution=False, zoom='auto')
+            cx.add_basemap(ax, crs='EPSG:4326',
+                          source=cx.providers.OpenStreetMap.Mapnik,
+                          attribution=False,
+                          zoom='auto',
+                          alpha=1.0)
         except Exception as e:
             print(f"Warning: Could not add basemap: {e}")
-            # If basemap fails, add a grid as fallback
             ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
+
+        # Plot each species with its assigned color
+        for species in unique_species:
+            species_data = data[data['scientific_name'] == species]
+            ax.scatter(species_data['long'], species_data['lat'],
+                      c=color_map[species],
+                      label=species,
+                      s=120,
+                      alpha=0.8,
+                      edgecolors='black',
+                      linewidth=1.2,
+                      zorder=5)
 
         # Set labels and title
         ax.set_xlabel('Longitude', fontsize=14, fontweight='bold')
