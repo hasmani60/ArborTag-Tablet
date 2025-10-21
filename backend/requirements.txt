@@ -8,3 +8,4 @@ Pillow
 folium
 branca
 contextily
+scipy

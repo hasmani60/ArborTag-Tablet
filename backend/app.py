@@ -169,53 +169,100 @@ def analyze_heatmap():
 
 @app.route('/analyze/heatmap_static', methods=['POST'])
 def analyze_heatmap_static():
-    """Carbon sequestration heatmap - PNG version with map background"""
+    """Carbon sequestration heatmap - PNG version with gradient blobs like Folium"""
     try:
+        from scipy.ndimage import gaussian_filter
+
         file = request.files['file']
         data = pd.read_csv(file)
 
         # Create figure with better sizing for mobile
         fig, ax = plt.subplots(figsize=(12, 10))
 
-        # Normalize carbon values for color mapping
-        norm = plt.Normalize(vmin=data['carbon_seq'].min(), vmax=data['carbon_seq'].max())
-
-        # Calculate marker size - make it larger and consistent
-        base_size = 300
-        sizes = base_size + (data['carbon_seq'] - data['carbon_seq'].min()) / \
-                (data['carbon_seq'].max() - data['carbon_seq'].min()) * 200
-
-        # Create scatter plot with carbon sequestration as color
-        scatter = ax.scatter(data['long'], data['lat'],
-                            c=data['carbon_seq'],
-                            s=sizes,
-                            cmap='RdYlGn_r',  # Red-Yellow-Green reversed
-                            alpha=0.7,
-                            edgecolors='black',
-                            linewidth=1.5,
-                            norm=norm,
-                            zorder=5)  # Ensure markers are on top
-
-        # Add colorbar
-        cbar = plt.colorbar(scatter, ax=ax, pad=0.02, shrink=0.8)
-        cbar.set_label('Carbon Sequestration\n(kg CO₂/year)', fontsize=11, fontweight='bold')
-        cbar.ax.tick_params(labelsize=9)
-
-        # Auto-zoom to data with padding
+        # Calculate bounds with padding
         lat_margin = (data['lat'].max() - data['lat'].min()) * 0.15 or 0.001
         long_margin = (data['long'].max() - data['long'].min()) * 0.15 or 0.001
 
-        ax.set_xlim(data['long'].min() - long_margin, data['long'].max() + long_margin)
-        ax.set_ylim(data['lat'].min() - lat_margin, data['lat'].max() + lat_margin)
+        xlim = [data['long'].min() - long_margin, data['long'].max() + long_margin]
+        ylim = [data['lat'].min() - lat_margin, data['lat'].max() + lat_margin]
 
-        # Add OpenStreetMap basemap
+        # Create a grid for the heatmap
+        grid_size = 200
+        x_grid = np.linspace(xlim[0], xlim[1], grid_size)
+        y_grid = np.linspace(ylim[0], ylim[1], grid_size)
+        X, Y = np.meshgrid(x_grid, y_grid)
+
+        # Initialize heatmap grid
+        heatmap_data = np.zeros((grid_size, grid_size))
+
+        # Add gaussian blobs for each tree point
+        for _, row in data.iterrows():
+            # Find nearest grid point
+            xi = np.argmin(np.abs(x_grid - row['long']))
+            yi = np.argmin(np.abs(y_grid - row['lat']))
+
+            # Add weighted value at this point
+            if 0 <= xi < grid_size and 0 <= yi < grid_size:
+                heatmap_data[yi, xi] += row['carbon_seq']
+
+        # Apply Gaussian filter to create smooth blobs
+        # Adjust sigma to control blob size (larger = bigger blobs)
+        sigma = 8  # Adjust this value to match your preference
+        heatmap_smooth = gaussian_filter(heatmap_data, sigma=sigma)
+
+        # Normalize for better visualization
+        if heatmap_smooth.max() > 0:
+            heatmap_smooth = heatmap_smooth / heatmap_smooth.max() * data['carbon_seq'].max()
+
+        # Set limits
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+
+        # Add OpenStreetMap basemap first
         try:
             cx.add_basemap(ax, crs='EPSG:4326', source=cx.providers.OpenStreetMap.Mapnik,
-                          attribution=False, zoom='auto')
+                          attribution=False, zoom='auto', alpha=0.7)
         except Exception as e:
             print(f"Warning: Could not add basemap: {e}")
-            # If basemap fails, add a grid as fallback
             ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
+
+        # Plot the heatmap with the same color gradient as Folium
+        # Green -> Yellow -> Orange -> Red
+        colors_list = ['#00FF00', '#FFFF00', '#FFA500', '#FF0000']
+        n_bins = 100
+        cmap = mcolors.LinearSegmentedColormap.from_list('carbon_heatmap', colors_list, N=n_bins)
+
+        # Plot heatmap with transparency
+        heatmap_plot = ax.contourf(X, Y, heatmap_smooth,
+                                   levels=30,
+                                   cmap=cmap,
+                                   alpha=0.6,
+                                   zorder=3)
+
+        # Add contour lines for better definition
+        contour_lines = ax.contour(X, Y, heatmap_smooth,
+                                   levels=10,
+                                   colors='black',
+                                   alpha=0.2,
+                                   linewidths=0.5,
+                                   zorder=4)
+
+        # Add original data points as small markers
+        ax.scatter(data['long'], data['lat'],
+                  c='white',
+                  s=30,
+                  alpha=0.8,
+                  edgecolors='black',
+                  linewidth=1,
+                  zorder=5,
+                  marker='o')
+
+        # Add colorbar matching Folium style
+        cbar = plt.colorbar(heatmap_plot, ax=ax, pad=0.02, shrink=0.8)
+        cbar.set_label('Carbon Sequestration Level\n(kg CO₂/year)',
+                      fontsize=11,
+                      fontweight='bold')
+        cbar.ax.tick_params(labelsize=9)
 
         # Set labels and title
         ax.set_xlabel('Longitude', fontsize=14, fontweight='bold')
