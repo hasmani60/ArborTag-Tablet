@@ -45,6 +45,14 @@ class AnalysisApiClient {
         return makeAnalysisRequest("$baseUrl/analyze/diversity_static", csvFile)
     }
 
+    suspend fun getHeatmapHtml(csvFile: File): String? {
+        return makeHtmlRequest("$baseUrl/analyze/heatmap", csvFile)
+    }
+
+    suspend fun getDiversityHtml(csvFile: File): String? {
+        return makeHtmlRequest("$baseUrl/analyze/diversity", csvFile)
+    }
+
     suspend fun getSummaryAnalysis(csvFile: File): String {
         return withContext(Dispatchers.IO) {
             try {
@@ -67,37 +75,6 @@ class AnalysisApiClient {
                 if (response.isSuccessful) {
                     val jsonString = response.body?.string() ?: "{}"
                     formatSummaryJson(jsonString)
-                } else {
-                    throw Exception("API Error: ${response.code}")
-                }
-            } catch (e: Exception) {
-                throw Exception("Network error: ${e.message}")
-            }
-        }
-    }
-
-    suspend fun getStats(csvFile: File): String {
-        return withContext(Dispatchers.IO) {
-            try {
-                val requestBody = MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart(
-                        "file",
-                        csvFile.name,
-                        csvFile.asRequestBody("text/csv".toMediaTypeOrNull())
-                    )
-                    .build()
-
-                val request = Request.Builder()
-                    .url("$baseUrl/analyze/stats")
-                    .post(requestBody)
-                    .build()
-
-                val response = client.newCall(request).execute()
-
-                if (response.isSuccessful) {
-                    val jsonString = response.body?.string() ?: "{}"
-                    formatStatsJson(jsonString)
                 } else {
                     throw Exception("API Error: ${response.code}")
                 }
@@ -153,6 +130,36 @@ class AnalysisApiClient {
         }
     }
 
+    private suspend fun makeHtmlRequest(url: String, csvFile: File): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val requestBody = MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart(
+                        "file",
+                        csvFile.name,
+                        csvFile.asRequestBody("text/csv".toMediaTypeOrNull())
+                    )
+                    .build()
+
+                val request = Request.Builder()
+                    .url(url)
+                    .post(requestBody)
+                    .build()
+
+                val response = client.newCall(request).execute()
+
+                if (response.isSuccessful) {
+                    response.body?.string()
+                } else {
+                    throw Exception("API Error: ${response.code}")
+                }
+            } catch (e: Exception) {
+                throw Exception("Network error: ${e.message}")
+            }
+        }
+    }
+
     private fun formatSummaryJson(jsonString: String): String {
         return try {
             val json = JSONObject(jsonString)
@@ -187,23 +194,6 @@ class AnalysisApiClient {
             }
         } catch (e: Exception) {
             "Error parsing summary: ${e.message}"
-        }
-    }
-
-    private fun formatStatsJson(jsonString: String): String {
-        return try {
-            val json = JSONObject(jsonString)
-            buildString {
-                appendLine("Statistics:")
-                appendLine("Total Trees: ${json.getInt("total_trees")}")
-                appendLine("Total Species: ${json.getInt("total_species")}")
-                appendLine("Average Height: ${String.format("%.2f", json.getDouble("avg_height"))} m")
-                appendLine("Average Width: ${String.format("%.2f", json.getDouble("avg_width"))} m")
-                appendLine("Total Carbon: ${String.format("%.2f", json.getDouble("total_carbon"))} kg CO₂/year")
-                appendLine("Most Common: ${json.getString("most_common_species")}")
-            }
-        } catch (e: Exception) {
-            "Error parsing stats: ${e.message}"
         }
     }
 }

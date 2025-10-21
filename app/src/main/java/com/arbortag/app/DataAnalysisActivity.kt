@@ -1,5 +1,6 @@
 package com.arbortag.app
 
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.View
@@ -112,15 +113,51 @@ class DataAnalysisActivity : AppCompatActivity() {
         }
 
         binding.btnHeatmap.setOnClickListener {
-            generateAnalysis("heatmap_static")
+            openInteractiveMap(MapViewerActivity.TYPE_HEATMAP)
         }
 
         binding.btnDiversity.setOnClickListener {
-            generateAnalysis("diversity_static")
+            openInteractiveMap(MapViewerActivity.TYPE_DIVERSITY)
         }
 
         binding.btnSummary.setOnClickListener {
             generateSummary()
+        }
+    }
+
+    private fun openInteractiveMap(mapType: String) {
+        val projectId = selectedProjectId
+        if (projectId == null) {
+            Toast.makeText(this, "Please select a project", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                val trees = database.treeDao().getTreesByProject(projectId)
+                if (trees.isEmpty()) {
+                    Toast.makeText(
+                        this@DataAnalysisActivity,
+                        "No data to analyze",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
+
+                val csvFile = createTempCsvFile(trees)
+
+                val intent = Intent(this@DataAnalysisActivity, MapViewerActivity::class.java)
+                intent.putExtra(MapViewerActivity.EXTRA_MAP_TYPE, mapType)
+                intent.putExtra(MapViewerActivity.EXTRA_CSV_PATH, csvFile.absolutePath)
+                startActivity(intent)
+
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@DataAnalysisActivity,
+                    "Error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
@@ -154,8 +191,6 @@ class DataAnalysisActivity : AppCompatActivity() {
                     "distribution" -> apiClient.getDistributionAnalysis(csvFile)
                     "height" -> apiClient.getHeightAnalysis(csvFile)
                     "width" -> apiClient.getWidthAnalysis(csvFile)
-                    "heatmap_static" -> apiClient.getHeatmapStaticAnalysis(csvFile)
-                    "diversity_static" -> apiClient.getDiversityStaticAnalysis(csvFile)
                     else -> null
                 }
 
