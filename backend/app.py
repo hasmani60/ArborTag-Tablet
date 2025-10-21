@@ -189,22 +189,21 @@ def analyze_heatmap_static():
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
 
-        # ADD MAP BACKGROUND FIRST - with NO alpha so it's fully visible
+        # ADD MAP BACKGROUND FIRST
         try:
             cx.add_basemap(ax, crs='EPSG:4326',
                           source=cx.providers.OpenStreetMap.Mapnik,
                           attribution=False,
                           zoom='auto',
-                          alpha=1.0)  # Full opacity for map background
+                          alpha=1.0)
         except Exception as e:
             print(f"Warning: Could not add basemap: {e}")
             ax.set_facecolor('#E8E8E8')
 
-        # Create heatmap grid
-        grid_size = 300  # Higher resolution
+        # Create HIGHER RESOLUTION heatmap grid
+        grid_size = 500  # Increased resolution
         x_grid = np.linspace(xlim[0], xlim[1], grid_size)
         y_grid = np.linspace(ylim[0], ylim[1], grid_size)
-        X, Y = np.meshgrid(x_grid, y_grid)
 
         # Initialize heatmap
         heatmap_data = np.zeros((grid_size, grid_size))
@@ -213,44 +212,60 @@ def analyze_heatmap_static():
         x_spacing = (xlim[1] - xlim[0]) / grid_size
         y_spacing = (ylim[1] - ylim[0]) / grid_size
 
-        # Add weighted points to grid
+        # Add weighted points with LARGER influence radius
         for _, row in data.iterrows():
             xi = int((row['long'] - xlim[0]) / x_spacing)
             yi = int((row['lat'] - ylim[0]) / y_spacing)
 
             if 0 <= xi < grid_size and 0 <= yi < grid_size:
-                # Weight by carbon sequestration
-                heatmap_data[yi, xi] += row['carbon_seq']
+                # Create a more prominent heat blob by adding to surrounding pixels
+                radius = 20  # pixels
+                for dx in range(-radius, radius + 1):
+                    for dy in range(-radius, radius + 1):
+                        nx, ny = xi + dx, yi + dy
+                        if 0 <= nx < grid_size and 0 <= ny < grid_size:
+                            # Calculate distance from center
+                            dist = np.sqrt(dx*dx + dy*dy)
+                            if dist <= radius:
+                                # Weight falls off with distance
+                                weight = (1 - dist/radius) * row['carbon_seq']
+                                heatmap_data[ny, nx] += weight
 
-        # Apply strong Gaussian blur for smooth gradient
-        sigma = 15  # Larger sigma = bigger, smoother blobs
+        # Apply Gaussian blur for smooth gradient
+        sigma = 8  # Moderate blur for smooth but visible blobs
         heatmap_smooth = gaussian_filter(heatmap_data, sigma=sigma)
 
-        # Mask zero values so they're transparent
-        heatmap_smooth = np.ma.masked_where(heatmap_smooth <= 0.01, heatmap_smooth)
+        # Normalize to make it more visible
+        if heatmap_smooth.max() > 0:
+            heatmap_smooth = heatmap_smooth / heatmap_smooth.max()
 
-        # Create color gradient matching Folium: Green -> Yellow -> Orange -> Red
-        colors_list = ['#00FF00', '#ADFF2F', '#FFFF00', '#FFD700', '#FFA500', '#FF4500', '#FF0000']
+        # Mask very low values to keep them transparent
+        heatmap_smooth = np.ma.masked_where(heatmap_smooth < 0.05, heatmap_smooth)
+
+        # Create VIBRANT color gradient: Green -> Yellow -> Orange -> Red
+        colors_list = ['#00FF00', '#7FFF00', '#FFFF00', '#FFD700', '#FFA500', '#FF6347', '#FF0000']
         n_bins = 256
         cmap = mcolors.LinearSegmentedColormap.from_list('heatmap', colors_list, N=n_bins)
-        cmap.set_bad(alpha=0)  # Make masked values transparent
+        cmap.set_bad(alpha=0)
 
-        # Plot heatmap with TRANSPARENCY so map shows through
+        # Plot heatmap with HIGHER alpha for visibility
         heatmap_plot = ax.imshow(heatmap_smooth,
                                  extent=[xlim[0], xlim[1], ylim[0], ylim[1]],
                                  origin='lower',
                                  cmap=cmap,
-                                 alpha=0.5,  # Semi-transparent so map is visible
+                                 alpha=0.65,  # Increased from 0.5 to 0.65 for more visibility
                                  interpolation='bilinear',
+                                 vmin=0,
+                                 vmax=1,
                                  zorder=3)
 
-        # Add small white dot markers for actual tree locations
+        # Add white dot markers for tree locations
         ax.scatter(data['long'], data['lat'],
                   c='white',
-                  s=25,
-                  alpha=0.9,
+                  s=40,  # Larger dots
+                  alpha=0.95,
                   edgecolors='black',
-                  linewidth=0.8,
+                  linewidth=1.2,
                   zorder=5)
 
         # Add colorbar
@@ -290,6 +305,7 @@ def analyze_heatmap_static():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ============================================================================
 # MODEL 3: From python_diversity_png1.py
