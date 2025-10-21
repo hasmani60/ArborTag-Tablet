@@ -118,65 +118,16 @@ def analyze_distribution():
 # MODEL 2: From python_heatmap_png1.py
 # ============================================================================
 
-def add_matching_gradient_legend_to_map(folium_map, title, vmin, vmax):
-    """EXACT function from python_heatmap_png1.py"""
-    colors = ['#00FF00', '#FFFF00', '#FFA500', '#FF0000']  # green to red
-    colormap = LinearColormap(colors, vmin=vmin, vmax=vmax)
-    colormap.caption = title
-    folium_map.add_child(colormap)
-
-@app.route('/analyze/heatmap', methods=['POST'])
-def analyze_heatmap():
-    """Carbon sequestration heatmap - Interactive HTML for mobile"""
-    try:
-        file = request.files['file']
-        data = pd.read_csv(file)
-
-        # Prepare data for the heatmap
-        heat_data = [[row['lat'], row['long'], row['carbon_seq']] for index, row in data.iterrows()]
-
-        # Create the map centered around the average coordinates
-        map_center = [data['lat'].mean(), data['long'].mean()]
-        heatmap_map = folium.Map(location=map_center, zoom_start=16,
-                                 tiles='OpenStreetMap',
-                                 control_scale=True)
-
-        # Add HeatMap to the map
-        HeatMap(heat_data,
-                min_opacity=0.3,
-                max_opacity=0.8,
-                radius=25,
-                blur=20,
-                gradient={0.0: '#00FF00', 0.4: '#FFFF00', 0.7: '#FFA500', 1.0: '#FF0000'}).add_to(heatmap_map)
-
-        # Add the matching gradient legend to the map
-        add_matching_gradient_legend_to_map(heatmap_map, "Carbon Sequestration Level (kg CO₂/year)",
-                                           data['carbon_seq'].min(),
-                                           data['carbon_seq'].max())
-
-        # Save the map as HTML
-        output_path = os.path.join(TEMP_DIR, 'carbon_seq_heatmap.html')
-        heatmap_map.save(output_path)
-
-        # Return HTML content
-        with open(output_path, 'r') as f:
-            html_content = f.read()
-
-        return html_content, 200, {'Content-Type': 'text/html'}
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/analyze/heatmap_static', methods=['POST'])
 def analyze_heatmap_static():
-    """Carbon sequestration heatmap - PNG version with gradient blobs like Folium"""
+    """Carbon sequestration heatmap - PNG with visible map background like Folium"""
     try:
         from scipy.ndimage import gaussian_filter
 
         file = request.files['file']
         data = pd.read_csv(file)
 
-        # Create figure with better sizing for mobile
+        # Create figure
         fig, ax = plt.subplots(figsize=(12, 10))
 
         # Calculate bounds with padding
@@ -186,98 +137,96 @@ def analyze_heatmap_static():
         xlim = [data['long'].min() - long_margin, data['long'].max() + long_margin]
         ylim = [data['lat'].min() - lat_margin, data['lat'].max() + lat_margin]
 
-        # Create a grid for the heatmap
-        grid_size = 200
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+
+        # ADD MAP BACKGROUND FIRST - with NO alpha so it's fully visible
+        try:
+            cx.add_basemap(ax, crs='EPSG:4326',
+                          source=cx.providers.OpenStreetMap.Mapnik,
+                          attribution=False,
+                          zoom='auto',
+                          alpha=1.0)  # Full opacity for map background
+        except Exception as e:
+            print(f"Warning: Could not add basemap: {e}")
+            ax.set_facecolor('#E8E8E8')
+
+        # Create heatmap grid
+        grid_size = 300  # Higher resolution
         x_grid = np.linspace(xlim[0], xlim[1], grid_size)
         y_grid = np.linspace(ylim[0], ylim[1], grid_size)
         X, Y = np.meshgrid(x_grid, y_grid)
 
-        # Initialize heatmap grid
+        # Initialize heatmap
         heatmap_data = np.zeros((grid_size, grid_size))
 
-        # Add gaussian blobs for each tree point
-        for _, row in data.iterrows():
-            # Find nearest grid point
-            xi = np.argmin(np.abs(x_grid - row['long']))
-            yi = np.argmin(np.abs(y_grid - row['lat']))
+        # Calculate grid spacing
+        x_spacing = (xlim[1] - xlim[0]) / grid_size
+        y_spacing = (ylim[1] - ylim[0]) / grid_size
 
-            # Add weighted value at this point
+        # Add weighted points to grid
+        for _, row in data.iterrows():
+            xi = int((row['long'] - xlim[0]) / x_spacing)
+            yi = int((row['lat'] - ylim[0]) / y_spacing)
+
             if 0 <= xi < grid_size and 0 <= yi < grid_size:
+                # Weight by carbon sequestration
                 heatmap_data[yi, xi] += row['carbon_seq']
 
-        # Apply Gaussian filter to create smooth blobs
-        # Adjust sigma to control blob size (larger = bigger blobs)
-        sigma = 8  # Adjust this value to match your preference
+        # Apply strong Gaussian blur for smooth gradient
+        sigma = 15  # Larger sigma = bigger, smoother blobs
         heatmap_smooth = gaussian_filter(heatmap_data, sigma=sigma)
 
-        # Normalize for better visualization
-        if heatmap_smooth.max() > 0:
-            heatmap_smooth = heatmap_smooth / heatmap_smooth.max() * data['carbon_seq'].max()
+        # Mask zero values so they're transparent
+        heatmap_smooth = np.ma.masked_where(heatmap_smooth <= 0.01, heatmap_smooth)
 
-        # Set limits
-        ax.set_xlim(xlim)
-        ax.set_ylim(ylim)
+        # Create color gradient matching Folium: Green -> Yellow -> Orange -> Red
+        colors_list = ['#00FF00', '#ADFF2F', '#FFFF00', '#FFD700', '#FFA500', '#FF4500', '#FF0000']
+        n_bins = 256
+        cmap = mcolors.LinearSegmentedColormap.from_list('heatmap', colors_list, N=n_bins)
+        cmap.set_bad(alpha=0)  # Make masked values transparent
 
-        # Add OpenStreetMap basemap first
-        try:
-            cx.add_basemap(ax, crs='EPSG:4326', source=cx.providers.OpenStreetMap.Mapnik,
-                          attribution=False, zoom='auto', alpha=0.7)
-        except Exception as e:
-            print(f"Warning: Could not add basemap: {e}")
-            ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
+        # Plot heatmap with TRANSPARENCY so map shows through
+        heatmap_plot = ax.imshow(heatmap_smooth,
+                                 extent=[xlim[0], xlim[1], ylim[0], ylim[1]],
+                                 origin='lower',
+                                 cmap=cmap,
+                                 alpha=0.5,  # Semi-transparent so map is visible
+                                 interpolation='bilinear',
+                                 zorder=3)
 
-        # Plot the heatmap with the same color gradient as Folium
-        # Green -> Yellow -> Orange -> Red
-        colors_list = ['#00FF00', '#FFFF00', '#FFA500', '#FF0000']
-        n_bins = 100
-        cmap = mcolors.LinearSegmentedColormap.from_list('carbon_heatmap', colors_list, N=n_bins)
-
-        # Plot heatmap with transparency
-        heatmap_plot = ax.contourf(X, Y, heatmap_smooth,
-                                   levels=30,
-                                   cmap=cmap,
-                                   alpha=0.6,
-                                   zorder=3)
-
-        # Add contour lines for better definition
-        contour_lines = ax.contour(X, Y, heatmap_smooth,
-                                   levels=10,
-                                   colors='black',
-                                   alpha=0.2,
-                                   linewidths=0.5,
-                                   zorder=4)
-
-        # Add original data points as small markers
+        # Add small white dot markers for actual tree locations
         ax.scatter(data['long'], data['lat'],
                   c='white',
-                  s=30,
-                  alpha=0.8,
+                  s=25,
+                  alpha=0.9,
                   edgecolors='black',
-                  linewidth=1,
-                  zorder=5,
-                  marker='o')
+                  linewidth=0.8,
+                  zorder=5)
 
-        # Add colorbar matching Folium style
-        cbar = plt.colorbar(heatmap_plot, ax=ax, pad=0.02, shrink=0.8)
-        cbar.set_label('Carbon Sequestration Level\n(kg CO₂/year)',
+        # Add colorbar
+        cbar = plt.colorbar(heatmap_plot, ax=ax, pad=0.02, shrink=0.8, fraction=0.046)
+        cbar.set_label('Carbon Sequestration\n(kg CO₂/year)',
                       fontsize=11,
                       fontweight='bold')
         cbar.ax.tick_params(labelsize=9)
 
-        # Set labels and title
+        # Labels and title
         ax.set_xlabel('Longitude', fontsize=14, fontweight='bold')
         ax.set_ylabel('Latitude', fontsize=14, fontweight='bold')
         ax.set_title('Carbon Sequestration Heatmap', fontsize=18, fontweight='bold', pad=15)
 
-        # Add text annotation with stats
+        # Stats box
         total_carbon = data['carbon_seq'].sum()
         avg_carbon = data['carbon_seq'].mean()
         num_trees = len(data)
+
+        stats_text = f'Trees: {num_trees}\nTotal: {total_carbon:.1f} kg CO₂/yr\nAvg: {avg_carbon:.1f} kg CO₂/yr'
         ax.text(0.02, 0.98,
-                f'Trees: {num_trees}\nTotal: {total_carbon:.1f} kg CO₂/yr\nAvg: {avg_carbon:.1f} kg CO₂/yr',
+                stats_text,
                 transform=ax.transAxes,
                 verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.9, edgecolor='black'),
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.95, edgecolor='black', linewidth=1.5),
                 fontsize=10,
                 fontweight='bold',
                 zorder=6)
@@ -285,7 +234,7 @@ def analyze_heatmap_static():
         plt.tight_layout()
 
         output_path = os.path.join(TEMP_DIR, 'carbon_heatmap_static.png')
-        plt.savefig(output_path, dpi=120, facecolor='white', bbox_inches='tight')
+        plt.savefig(output_path, dpi=150, facecolor='white', bbox_inches='tight')
         plt.close()
 
         return send_file(output_path, mimetype='image/png')
