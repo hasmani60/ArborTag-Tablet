@@ -18,11 +18,18 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
         }
     }
 
-    buildTypes {
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jniLibs")
+        }
+    }
+
+
+buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -43,7 +50,7 @@ android {
 
     buildFeatures {
         viewBinding = true
-        dataBinding = true  // ADDED THIS LINE
+        dataBinding = true
         compose = true
     }
 
@@ -64,10 +71,14 @@ android {
 }
 
 dependencies {
-    // OpenCV from JitPack - Pre-built with ArUco support!
-    implementation("com.quickbirdstudios:opencv-contrib:4.5.3")
+    // UPDATED: Official OpenCV with ArUco support
+    // This is more reliable than JitPack version
+    //implementation("org.opencv:opencv:4.8.0")
 
-    // Core Android - versions compatible with compileSdk 33
+    // ALTERNATIVE: If above doesn't work, use this:
+    implementation("com.quickbirdstudios:opencv-contrib:4.5.3.0")
+
+    // Core Android - versions compatible with compileSdk 34
     implementation("androidx.core:core-ktx:1.9.0")
     implementation("androidx.appcompat:appcompat:1.5.1")
     implementation("com.google.android.material:material:1.8.0")
@@ -81,7 +92,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1")
 
-    // Compose Dependencies (if you use Compose)
+    // Compose Dependencies
     val composeBom = platform("androidx.compose:compose-bom:2023.01.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -106,7 +117,7 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
-    // CameraX (downgraded for compileSdk 33)
+    // CameraX
     val cameraxVersion = "1.2.0"
     implementation("androidx.camera:camera-core:$cameraxVersion")
     implementation("androidx.camera:camera-camera2:$cameraxVersion")

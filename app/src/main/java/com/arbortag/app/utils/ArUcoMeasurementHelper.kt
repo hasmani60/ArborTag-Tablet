@@ -11,8 +11,9 @@ import java.util.Locale
 import kotlin.math.sqrt
 
 /**
- * ArUco Measurement Helper for OpenCV 4.5.3
+ * Enhanced ArUco Measurement Helper for OpenCV 4.5.3+
  * Detects ArUco markers and enables accurate distance measurements
+ * with improved preprocessing and error handling
  *
  * @param markerSizeMeters The physical size of the ArUco marker (side length in meters)
  */
@@ -23,78 +24,164 @@ class ArUcoMeasurementHelper(private val markerSizeMeters: Double) {
 
     /**
      * Detect ArUco marker in image and calculate pixel-to-meter calibration
+     * ENHANCED with better preprocessing and error handling
      *
      * @param bitmap Input image containing the ArUco marker
      * @return true if marker was detected and calibration successful
      */
     fun detectMarkerAndCalculateRatio(bitmap: Bitmap): Boolean {
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "Starting ArUco Detection")
+        Log.d(TAG, "Image size: ${bitmap.width}x${bitmap.height}")
+        Log.d(TAG, "Expected marker size: $markerSizeMeters m")
+        Log.d(TAG, "========================================")
+
         val mat = Mat()
         Utils.bitmapToMat(bitmap, mat)
 
+        // Convert to grayscale
         val gray = Mat()
         Imgproc.cvtColor(mat, gray, Imgproc.COLOR_RGBA2GRAY)
+
+        // ENHANCEMENT: Improve image quality for detection
+        val enhancedGray = Mat()
+        Imgproc.equalizeHist(gray, enhancedGray)  // Enhance contrast
+
+        // Optional: Apply Gaussian blur to reduce noise
+        val blurred = Mat()
+        Imgproc.GaussianBlur(enhancedGray, blurred, Size(5.0, 5.0), 0.0)
 
         try {
             // Get ArUco dictionary (DICT_6X6_250: 6x6 bits, markers 0-249)
             val dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_6X6_250)
+            Log.d(TAG, "✓ Dictionary loaded: DICT_6X6_250")
 
-            // Create detector parameters
+            // Create detector parameters with TUNED settings
             val parameters = DetectorParameters.create()
+
+            // CRITICAL: Tune these for better detection
+            parameters.set_adaptiveThreshWinSizeMin(3)
+            parameters.set_adaptiveThreshWinSizeMax(23)
+            parameters.set_adaptiveThreshWinSizeStep(10)
+            parameters.set_minMarkerPerimeterRate(0.03)  // Min marker size (3% of image)
+            parameters.set_maxMarkerPerimeterRate(4.0)   // Max marker size (400% of image)
+            parameters.set_polygonalApproxAccuracyRate(0.03)
+            parameters.set_minCornerDistanceRate(0.05)
+            parameters.set_minDistanceToBorder(3)
+            parameters.set_cornerRefinementWinSize(5)
+            parameters.set_cornerRefinementMethod(Aruco.CORNER_REFINE_SUBPIX)
+
+            Log.d(TAG, "✓ Detector parameters configured")
 
             // Prepare containers for detection results
             val corners = ArrayList<Mat>()
             val ids = Mat()
             val rejectedImgPoints = ArrayList<Mat>()
 
-            // Detect ArUco markers in the image (OLD API)
-            Aruco.detectMarkers(gray, dictionary, corners, ids, parameters, rejectedImgPoints)
+            // Detect ArUco markers in the image
+            Log.d(TAG, "Running marker detection...")
+            Aruco.detectMarkers(blurred, dictionary, corners, ids, parameters, rejectedImgPoints)
 
-            Log.d(TAG, "Detected ${corners.size} ArUco marker(s)")
+            Log.d(TAG, "Detection complete:")
+            Log.d(TAG, "  ✓ Detected: ${corners.size} marker(s)")
+            Log.d(TAG, "  ⚠ Rejected: ${rejectedImgPoints.size} candidate(s)")
 
-            if (corners.isNotEmpty() && !ids.empty()) {
-                // Get the first detected marker's corners
-                val markerCorners = corners[0]
-                val markerId = ids.get(0, 0)[0].toInt()
-
-                Log.d(TAG, "Using marker ID: $markerId")
-
-                // Calculate the marker's perimeter in pixels
-                val perimeterPixels = calculatePerimeter(markerCorners)
-
-                // Calculate side length (perimeter / 4 for square marker)
-                val sideLengthPixels = perimeterPixels / 4.0
-
-                // Calculate pixel-to-meter ratio
-                pixelToMeterRatio = sideLengthPixels / markerSizeMeters
-
-                Log.d(TAG, "Calibration successful!")
-                Log.d(TAG, "Side length: $sideLengthPixels pixels")
-                Log.d(TAG, "Ratio: $pixelToMeterRatio pixels/meter")
+            if (corners.isEmpty() || ids.empty()) {
+                Log.w(TAG, "========================================")
+                Log.w(TAG, "✗ NO MARKERS DETECTED")
+                Log.w(TAG, "========================================")
+                Log.w(TAG, "Troubleshooting checklist:")
+                Log.w(TAG, "  □ Is the marker DICT_6X6_250?")
+                Log.w(TAG, "  □ Is the marker clearly visible in frame?")
+                Log.w(TAG, "  □ Is there good lighting (not too bright/dark)?")
+                Log.w(TAG, "  □ Is the image sharp (not blurred)?")
+                Log.w(TAG, "  □ Is the marker flat (not curved/bent)?")
+                Log.w(TAG, "  □ Is the marker size correct in Settings?")
 
                 // Clean up
                 mat.release()
                 gray.release()
+                enhancedGray.release()
+                blurred.release()
                 ids.release()
-                corners.forEach { it.release() }
                 rejectedImgPoints.forEach { it.release() }
 
-                return true
-            } else {
-                Log.w(TAG, "No ArUco markers detected in image")
+                return false
             }
 
-            // Clean up if no markers found
+            // SUCCESS: Marker(s) detected
+            Log.d(TAG, "========================================")
+            Log.d(TAG, "✓ MARKER(S) FOUND")
+            Log.d(TAG, "========================================")
+
+            // Get the first detected marker's corners
+            val markerCorners = corners[0]
+            val markerId = ids.get(0, 0)[0].toInt()
+
+            Log.d(TAG, "Using marker ID: $markerId")
+
+            // Log corner positions
+            for (i in 0 until 4) {
+                val x = markerCorners.get(0, i)[0]
+                val y = markerCorners.get(0, i)[1]
+                Log.d(TAG, "  Corner $i: (${"%.1f".format(x)}, ${"%.1f".format(y)})")
+            }
+
+            // Calculate the marker's perimeter in pixels
+            val perimeterPixels = calculatePerimeter(markerCorners)
+            Log.d(TAG, "Perimeter: ${"%.2f".format(perimeterPixels)} pixels")
+
+            // Calculate side length (perimeter / 4 for square marker)
+            val sideLengthPixels = perimeterPixels / 4.0
+            Log.d(TAG, "Average side length: ${"%.2f".format(sideLengthPixels)} pixels")
+
+            // Calculate pixel-to-meter ratio
+            pixelToMeterRatio = sideLengthPixels / markerSizeMeters
+
+            Log.d(TAG, "========================================")
+            Log.d(TAG, "✓ CALIBRATION SUCCESSFUL")
+            Log.d(TAG, "========================================")
+            Log.d(TAG, "Marker physical size: $markerSizeMeters m")
+            Log.d(TAG, "Marker pixel size: ${"%.2f".format(sideLengthPixels)} px")
+            Log.d(TAG, "Ratio: ${"%.2f".format(pixelToMeterRatio)} pixels/meter")
+            Log.d(TAG, "1 pixel = ${"%.4f".format(1.0 / pixelToMeterRatio)} meters")
+            Log.d(TAG, "========================================")
+
+            // Clean up
             mat.release()
             gray.release()
+            enhancedGray.release()
+            blurred.release()
             ids.release()
+            corners.forEach { it.release() }
             rejectedImgPoints.forEach { it.release() }
 
+            return true
+
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e(TAG, "========================================")
+            Log.e(TAG, "✗ NATIVE LIBRARY ERROR")
+            Log.e(TAG, "========================================")
+            Log.e(TAG, "ArUco native library not loaded!", e)
+            Log.e(TAG, "This means OpenCV ArUco module is not properly included")
+            Log.e(TAG, "Solution: Check build.gradle.kts OpenCV dependency")
+
+            mat.release()
+            gray.release()
+            enhancedGray.release()
+            blurred.release()
             return false
 
         } catch (e: Exception) {
+            Log.e(TAG, "========================================")
+            Log.e(TAG, "✗ DETECTION ERROR")
+            Log.e(TAG, "========================================")
             Log.e(TAG, "Error during marker detection: ${e.message}", e)
+
             mat.release()
             gray.release()
+            enhancedGray.release()
+            blurred.release()
             return false
         }
     }
@@ -147,7 +234,13 @@ class ArUcoMeasurementHelper(private val markerSizeMeters: Double) {
         val pixelDistance = sqrt((dx * dx + dy * dy).toDouble())
 
         // Convert pixel distance to meters
-        return pixelDistance / pixelToMeterRatio
+        val realDistance = pixelDistance / pixelToMeterRatio
+
+        Log.d(TAG, "Distance calculation:")
+        Log.d(TAG, "  Pixel distance: ${"%.2f".format(pixelDistance)} px")
+        Log.d(TAG, "  Real distance: ${"%.2f".format(realDistance)} m")
+
+        return realDistance
     }
 
     /**
@@ -174,7 +267,7 @@ class ArUcoMeasurementHelper(private val markerSizeMeters: Double) {
 
             Aruco.detectMarkers(gray, dictionary, corners, ids, parameters, rejectedImgPoints)
 
-            // Draw detected markers with green outlines (OLD API)
+            // Draw detected markers with green outlines
             if (corners.isNotEmpty() && !ids.empty()) {
                 Aruco.drawDetectedMarkers(mat, corners, ids, Scalar(0.0, 255.0, 0.0))
                 Log.d(TAG, "Drew ${corners.size} marker(s) on image")

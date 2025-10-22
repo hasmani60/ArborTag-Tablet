@@ -12,9 +12,9 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
-        maven { url = uri("https://quickbirdstudios.com/maven") }
     }
 }
 
 rootProject.name = "ArborTag"
 include(":app")
+// include(":opencv")

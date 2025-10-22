@@ -8,6 +8,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
@@ -18,6 +19,8 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.arbortag.app.databinding.ActivityTreeTaggingBinding
 import com.arbortag.app.utils.ArUcoMeasurementHelper
+import org.opencv.aruco.Aruco
+import org.opencv.core.Core
 import java.io.File
 
 class TreeTaggingActivity : AppCompatActivity() {
@@ -38,6 +41,8 @@ class TreeTaggingActivity : AppCompatActivity() {
     private var widthMeters: Double? = null
     private var canopyMeters: Double? = null
 
+    private val TAG = "TreeTaggingActivity"
+
     enum class MeasurementMode {
         NONE, HEIGHT, WIDTH, CANOPY
     }
@@ -49,12 +54,77 @@ class TreeTaggingActivity : AppCompatActivity() {
 
         projectId = intent.getLongExtra("project_id", -1)
 
+        // TEST OpenCV & ArUco before proceeding
+        testOpenCVAndArUco()
+
         // Initialize ArUco helper with marker SIZE (side length) from settings
         val markerSize = SettingsActivity.getMarkerSize(this)
         arucoHelper = ArUcoMeasurementHelper(markerSize)
+        Log.d(TAG, "ArUco helper initialized with marker size: $markerSize m")
 
         setupCamera()
         setupClickListeners()
+    }
+
+    /**
+     * Test OpenCV and ArUco availability
+     * This helps diagnose issues early
+     */
+    private fun testOpenCVAndArUco() {
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "Testing OpenCV & ArUco in TreeTagging")
+        Log.d(TAG, "========================================")
+
+        var allOk = true
+
+        try {
+            // Test 1: OpenCV version
+            val opencvVersion = Core.getVersionString()
+            Log.d(TAG, "✓ OpenCV version: $opencvVersion")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "✗ Could not get OpenCV version: ${e.message}")
+            allOk = false
+        }
+
+        try {
+            // Test 2: Can create ArUco dictionary?
+            val dict = Aruco.getPredefinedDictionary(Aruco.DICT_6X6_250)
+            Log.d(TAG, "✓ ArUco dictionary created")
+
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e(TAG, "✗ ArUco NATIVE LIBRARY ERROR!", e)
+            allOk = false
+            showArUcoErrorDialog()
+
+        } catch (e: Exception) {
+            Log.e(TAG, "✗ ArUco dictionary error: ${e.message}", e)
+            allOk = false
+        }
+
+        if (allOk) {
+            Log.d(TAG, "✓ All systems ready for ArUco detection")
+            Log.d(TAG, "========================================")
+        } else {
+            Log.e(TAG, "✗ System check FAILED - ArUco may not work")
+            Log.e(TAG, "========================================")
+        }
+    }
+
+    private fun showArUcoErrorDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("ArUco Not Available")
+            .setMessage(
+                "The ArUco marker detection library is not working.\n\n" +
+                        "Height measurements using markers will not work.\n\n" +
+                        "Possible solutions:\n" +
+                        "1. Update OpenCV dependency in build.gradle\n" +
+                        "2. Use official OpenCV Android SDK\n" +
+                        "3. Check that opencv-contrib is included"
+            )
+            .setPositiveButton("Continue Anyway") { _, _ -> }
+            .setNegativeButton("Go Back") { _, _ -> finish() }
+            .show()
     }
 
     private fun setupClickListeners() {
@@ -94,8 +164,8 @@ class TreeTaggingActivity : AppCompatActivity() {
                 if (arucoHelper?.isCalibrated() != true) {
                     Toast.makeText(
                         this,
-                        "Please detect ArUco marker first!",
-                        Toast.LENGTH_SHORT
+                        "Please detect ArUco marker first by clicking 'Detect Marker'",
+                        Toast.LENGTH_LONG
                     ).show()
                     return@setOnTouchListener true
                 }
@@ -125,7 +195,7 @@ class TreeTaggingActivity : AppCompatActivity() {
         if (arucoHelper?.isCalibrated() != true) {
             Toast.makeText(
                 this,
-                "Please detect ArUco marker first by clicking 'Detect Marker'",
+                "⚠️ Please detect ArUco marker first!\n\nClick 'Detect Marker' button",
                 Toast.LENGTH_LONG
             ).show()
             return
@@ -141,7 +211,7 @@ class TreeTaggingActivity : AppCompatActivity() {
             else -> ""
         }
 
-        Toast.makeText(this, instruction, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "📍 $instruction", Toast.LENGTH_LONG).show()
     }
 
     private fun drawPointOnImage(x: Float, y: Float) {
@@ -213,15 +283,16 @@ class TreeTaggingActivity : AppCompatActivity() {
 
             Toast.makeText(
                 this,
-                "Measurement saved: ${String.format("%.2f m", realDistance)}",
+                "✓ ${String.format("%.2f m", realDistance)} measured",
                 Toast.LENGTH_SHORT
             ).show()
 
         } catch (e: Exception) {
+            Log.e(TAG, "Measurement error: ${e.message}", e)
             Toast.makeText(
                 this,
-                "Error: ${e.message}",
-                Toast.LENGTH_SHORT
+                "❌ Error: ${e.message}",
+                Toast.LENGTH_LONG
             ).show()
         }
     }
@@ -232,7 +303,7 @@ class TreeTaggingActivity : AppCompatActivity() {
             binding.tvMarkerStatus.text = "⌛ Detecting marker..."
             binding.tvMarkerStatus.setTextColor(getColor(R.color.warning))
 
-            // Run detection in background
+            // Run detection in background thread
             Thread {
                 val detected = arucoHelper?.detectMarkerAndCalculateRatio(bitmap) ?: false
 
@@ -251,7 +322,7 @@ class TreeTaggingActivity : AppCompatActivity() {
 
                         Toast.makeText(
                             this,
-                            "ArUco marker detected! You can now measure.",
+                            "✓ ArUco marker detected!\nYou can now measure tree dimensions.",
                             Toast.LENGTH_LONG
                         ).show()
                     } else {
@@ -271,14 +342,17 @@ class TreeTaggingActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("ArUco Marker Not Detected")
             .setMessage(
-                "Make sure:\n\n" +
-                        "• ArUco marker (DICT_6X6_250) is in the image\n" +
-                        "• Marker is clearly visible and not blurred\n" +
-                        "• Marker size is configured correctly in Settings\n" +
-                        "• Good lighting conditions\n\n" +
-                        "Would you like to:\n" +
-                        "1. Retake the photo\n" +
-                        "2. Check Settings\n" +
+                "No ArUco marker was found in the image.\n\n" +
+                        "Checklist:\n" +
+                        "✓ Marker is DICT_6X6_250 (ID 0-249)\n" +
+                        "✓ Marker is clearly visible and in focus\n" +
+                        "✓ Good lighting (not too dark/bright)\n" +
+                        "✓ Marker is flat (not curved/wrinkled)\n" +
+                        "✓ Marker size in Settings is correct\n" +
+                        "✓ Entire marker is in frame\n\n" +
+                        "What to do:\n" +
+                        "1. Retake photo with better conditions\n" +
+                        "2. Check Settings for marker size\n" +
                         "3. Try detection again"
             )
             .setPositiveButton("Retake Photo") { _, _ ->
@@ -308,8 +382,11 @@ class TreeTaggingActivity : AppCompatActivity() {
                     it.setSurfaceProvider(binding.previewView.surfaceProvider)
                 }
 
+            // IMPROVED: Better image capture settings
             imageCapture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .setTargetResolution(android.util.Size(1920, 1080))
+                .setFlashMode(ImageCapture.FLASH_MODE_AUTO)
                 .build()
 
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -322,8 +399,12 @@ class TreeTaggingActivity : AppCompatActivity() {
                     preview,
                     imageCapture
                 )
+
+                Log.d(TAG, "Camera initialized successfully")
+
             } catch (e: Exception) {
-                Toast.makeText(this, "Camera initialization failed", Toast.LENGTH_SHORT).show()
+                Log.e(TAG, "Camera initialization failed: ${e.message}", e)
+                Toast.makeText(this, "Camera error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -333,7 +414,7 @@ class TreeTaggingActivity : AppCompatActivity() {
 
         val photoFile = File(
             externalMediaDirs.firstOrNull(),
-            "${System.currentTimeMillis()}.jpg"
+            "tree_${System.currentTimeMillis()}.jpg"
         )
 
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
@@ -353,7 +434,7 @@ class TreeTaggingActivity : AppCompatActivity() {
 
                     Toast.makeText(
                         this@TreeTaggingActivity,
-                        "Image captured! Detecting ArUco marker...",
+                        "📸 Image captured! Detecting ArUco marker...",
                         Toast.LENGTH_SHORT
                     ).show()
 
@@ -362,10 +443,11 @@ class TreeTaggingActivity : AppCompatActivity() {
                 }
 
                 override fun onError(exception: ImageCaptureException) {
+                    Log.e(TAG, "Image capture failed: ${exception.message}", exception)
                     Toast.makeText(
                         this@TreeTaggingActivity,
-                        "Image capture failed: ${exception.message}",
-                        Toast.LENGTH_SHORT
+                        "Capture failed: ${exception.message}",
+                        Toast.LENGTH_LONG
                     ).show()
                 }
             }
@@ -375,6 +457,7 @@ class TreeTaggingActivity : AppCompatActivity() {
     private fun displayCapturedImage(imageFile: File) {
         capturedBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
         binding.ivCapturedImage.setImageBitmap(capturedBitmap)
+        Log.d(TAG, "Image loaded: ${capturedBitmap?.width}x${capturedBitmap?.height}")
     }
 
     private fun proceedToSpeciesSelection() {
@@ -384,8 +467,8 @@ class TreeTaggingActivity : AppCompatActivity() {
         if (height == null || width == null) {
             Toast.makeText(
                 this,
-                "Please measure height and width",
-                Toast.LENGTH_SHORT
+                "⚠️ Please measure both height and width",
+                Toast.LENGTH_LONG
             ).show()
             return
         }
@@ -396,6 +479,7 @@ class TreeTaggingActivity : AppCompatActivity() {
         intent.putExtra("height", height)
         intent.putExtra("width", width)
         canopyMeters?.let { intent.putExtra("canopy", it) }
+
         startActivity(intent)
         finish()
     }
