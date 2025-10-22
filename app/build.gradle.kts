@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp")
+    id("com.google.devtools.ksp") version "1.9.20-1.0.14"
 }
 
 android {
@@ -16,6 +16,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
     }
 
     buildTypes {
@@ -29,25 +33,25 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 
     buildFeatures {
         viewBinding = true
-        compose = true  // ADD THIS
+        dataBinding = true  // ADDED THIS LINE
+        compose = true
     }
 
-    // ADD THIS BLOCK
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.4"
     }
 
-    packagingOptions {
+    packaging {
         resources {
             pickFirsts += listOf(
                 "lib/x86/libc++_shared.so",
@@ -60,18 +64,25 @@ android {
 }
 
 dependencies {
-    // Core Android
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
+    // OpenCV from JitPack - Pre-built with ArUco support!
+    implementation("com.quickbirdstudios:opencv-contrib:4.5.3")
+
+    // Core Android - versions compatible with compileSdk 33
+    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.appcompat:appcompat:1.5.1")
+    implementation("com.google.android.material:material:1.8.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
-    // Lifecycle & ViewModel
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    // Force older emoji2 that works with compileSdk 33
+    implementation("androidx.emoji2:emoji2:1.2.0")
+    implementation("androidx.emoji2:emoji2-views-helper:1.2.0")
 
-    // ADD THESE COMPOSE DEPENDENCIES
-    val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
+    // Lifecycle & ViewModel
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1")
+
+    // Compose Dependencies (if you use Compose)
+    val composeBom = platform("androidx.compose:compose-bom:2023.01.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -80,8 +91,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.activity:activity-compose:1.8.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.activity:activity-compose:1.6.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
@@ -90,20 +101,20 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Room Database
-    val roomVersion = "2.6.1"
+    val roomVersion = "2.5.0"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
-    // CameraX
-    val cameraxVersion = "1.3.1"
+    // CameraX (downgraded for compileSdk 33)
+    val cameraxVersion = "1.2.0"
     implementation("androidx.camera:camera-core:$cameraxVersion")
     implementation("androidx.camera:camera-camera2:$cameraxVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
 
     // Location Services
-    implementation("com.google.android.gms:play-services-location:21.1.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
 
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

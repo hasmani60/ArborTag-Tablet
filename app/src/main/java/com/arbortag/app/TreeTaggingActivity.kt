@@ -11,13 +11,14 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.arbortag.app.databinding.ActivityTreeTaggingBinding
+import com.arbortag.app.utils.ArUcoMeasurementHelper
 import java.io.File
-import kotlin.math.sqrt
 
 class TreeTaggingActivity : AppCompatActivity() {
 
@@ -27,15 +28,15 @@ class TreeTaggingActivity : AppCompatActivity() {
     private var capturedImagePath: String? = null
     private var capturedBitmap: Bitmap? = null
 
+    // ArUco measurement helper
+    private var arucoHelper: ArUcoMeasurementHelper? = null
+
     // Measurement state
     private val measurementPoints = mutableListOf<Pair<Float, Float>>()
     private var currentMeasurementMode: MeasurementMode = MeasurementMode.NONE
     private var heightMeters: Double? = null
     private var widthMeters: Double? = null
     private var canopyMeters: Double? = null
-
-    // Simple scale factor (pixels to meters) - simplified without Aruco
-    private val SCALE_FACTOR = 100.0 // 100 pixels = 1 meter (approximate)
 
     enum class MeasurementMode {
         NONE, HEIGHT, WIDTH, CANOPY
@@ -47,6 +48,10 @@ class TreeTaggingActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         projectId = intent.getLongExtra("project_id", -1)
+
+        // Initialize ArUco helper with marker SIZE (side length) from settings
+        val markerSize = SettingsActivity.getMarkerSize(this)
+        arucoHelper = ArUcoMeasurementHelper(markerSize)
 
         setupCamera()
         setupClickListeners()
@@ -73,14 +78,27 @@ class TreeTaggingActivity : AppCompatActivity() {
             proceedToSpeciesSelection()
         }
 
+        binding.btnRecalibrate.setOnClickListener {
+            detectMarker()
+        }
+
         setupImageViewTouchListener()
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupImageViewTouchListener() {
-        binding.ivCapturedImage.setOnTouchListener { view, event ->
+        binding.ivCapturedImage.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN &&
                 currentMeasurementMode != MeasurementMode.NONE) {
+
+                if (arucoHelper?.isCalibrated() != true) {
+                    Toast.makeText(
+                        this,
+                        "Please detect ArUco marker first!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnTouchListener true
+                }
 
                 val x = event.x
                 val y = event.y
@@ -104,6 +122,15 @@ class TreeTaggingActivity : AppCompatActivity() {
     }
 
     private fun startMeasurement(mode: MeasurementMode) {
+        if (arucoHelper?.isCalibrated() != true) {
+            Toast.makeText(
+                this,
+                "Please detect ArUco marker first by clicking 'Detect Marker'",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
         currentMeasurementMode = mode
         measurementPoints.clear()
 
@@ -125,7 +152,21 @@ class TreeTaggingActivity : AppCompatActivity() {
                 color = Color.RED
                 style = Paint.Style.FILL
             }
-            canvas.drawCircle(x, y, 10f, paint)
+            canvas.drawCircle(x, y, 15f, paint)
+
+            // Draw line if we have 2 points
+            if (measurementPoints.size == 1) {
+                val linePaint = Paint().apply {
+                    color = Color.GREEN
+                    strokeWidth = 5f
+                }
+                canvas.drawLine(
+                    measurementPoints[0].first,
+                    measurementPoints[0].second,
+                    x, y,
+                    linePaint
+                )
+            }
 
             binding.ivCapturedImage.setImageBitmap(mutableBitmap)
             capturedBitmap = mutableBitmap
@@ -138,32 +179,121 @@ class TreeTaggingActivity : AppCompatActivity() {
         val point1 = measurementPoints[0]
         val point2 = measurementPoints[1]
 
-        // Calculate pixel distance
-        val pixelDistance = sqrt(
-            (point2.first - point1.first) * (point2.first - point1.first) +
-                    (point2.second - point1.second) * (point2.second - point1.second)
-        )
+        try {
+            // Use ArUco helper to calculate real distance
+            val realDistance = arucoHelper?.calculateDistance(point1, point2) ?: 0.0
 
-        // Convert to meters using simple scale
-        val realDistance = pixelDistance / SCALE_FACTOR
+            // Annotate the image
+            capturedBitmap = arucoHelper?.annotateMeasurement(
+                capturedBitmap!!,
+                point1,
+                point2,
+                realDistance
+            )
+            binding.ivCapturedImage.setImageBitmap(capturedBitmap)
 
-        when (currentMeasurementMode) {
-            MeasurementMode.HEIGHT -> {
-                heightMeters = realDistance
-                binding.tvHeightValue.text = String.format("%.2f m", realDistance)
+            when (currentMeasurementMode) {
+                MeasurementMode.HEIGHT -> {
+                    heightMeters = realDistance
+                    binding.tvHeightValue.text = String.format("%.2f m", realDistance)
+                    binding.tvHeightValue.setTextColor(getColor(R.color.success))
+                }
+                MeasurementMode.WIDTH -> {
+                    widthMeters = realDistance
+                    binding.tvWidthValue.text = String.format("%.2f m", realDistance)
+                    binding.tvWidthValue.setTextColor(getColor(R.color.success))
+                }
+                MeasurementMode.CANOPY -> {
+                    canopyMeters = realDistance
+                    binding.tvCanopyValue.text = String.format("%.2f m", realDistance)
+                    binding.tvCanopyValue.setTextColor(getColor(R.color.success))
+                }
+                else -> {}
             }
-            MeasurementMode.WIDTH -> {
-                widthMeters = realDistance
-                binding.tvWidthValue.text = String.format("%.2f m", realDistance)
-            }
-            MeasurementMode.CANOPY -> {
-                canopyMeters = realDistance
-                binding.tvCanopyValue.text = String.format("%.2f m", realDistance)
-            }
-            else -> {}
+
+            Toast.makeText(
+                this,
+                "Measurement saved: ${String.format("%.2f m", realDistance)}",
+                Toast.LENGTH_SHORT
+            ).show()
+
+        } catch (e: Exception) {
+            Toast.makeText(
+                this,
+                "Error: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
         }
+    }
 
-        Toast.makeText(this, "Measurement saved!", Toast.LENGTH_SHORT).show()
+    private fun detectMarker() {
+        capturedBitmap?.let { bitmap ->
+            binding.progressBar.visibility = View.VISIBLE
+            binding.tvMarkerStatus.text = "⌛ Detecting marker..."
+            binding.tvMarkerStatus.setTextColor(getColor(R.color.warning))
+
+            // Run detection in background
+            Thread {
+                val detected = arucoHelper?.detectMarkerAndCalculateRatio(bitmap) ?: false
+
+                runOnUiThread {
+                    binding.progressBar.visibility = View.GONE
+
+                    if (detected) {
+                        binding.tvMarkerStatus.text = "✓ Marker Detected"
+                        binding.tvMarkerStatus.setTextColor(getColor(R.color.success))
+                        binding.tvPixelRatio.text = String.format(
+                            "Ratio: %.2f px/m",
+                            arucoHelper?.getPixelToMeterRatio() ?: 0.0
+                        )
+                        binding.tvPixelRatio.visibility = View.VISIBLE
+                        binding.layoutMeasurementButtons.visibility = View.VISIBLE
+
+                        Toast.makeText(
+                            this,
+                            "ArUco marker detected! You can now measure.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        binding.tvMarkerStatus.text = "✗ No Marker Found"
+                        binding.tvMarkerStatus.setTextColor(getColor(R.color.error))
+                        binding.tvPixelRatio.visibility = View.GONE
+                        binding.layoutMeasurementButtons.visibility = View.GONE
+
+                        showMarkerNotFoundDialog()
+                    }
+                }
+            }.start()
+        }
+    }
+
+    private fun showMarkerNotFoundDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("ArUco Marker Not Detected")
+            .setMessage(
+                "Make sure:\n\n" +
+                        "• ArUco marker (DICT_6X6_250) is in the image\n" +
+                        "• Marker is clearly visible and not blurred\n" +
+                        "• Marker size is configured correctly in Settings\n" +
+                        "• Good lighting conditions\n\n" +
+                        "Would you like to:\n" +
+                        "1. Retake the photo\n" +
+                        "2. Check Settings\n" +
+                        "3. Try detection again"
+            )
+            .setPositiveButton("Retake Photo") { _, _ ->
+                // Reset to camera mode
+                binding.previewView.visibility = View.VISIBLE
+                binding.layoutMeasurement.visibility = View.GONE
+                binding.btnCapture.visibility = View.VISIBLE
+            }
+            .setNeutralButton("Settings") { _, _ ->
+                startActivity(Intent(this, SettingsActivity::class.java))
+            }
+            .setNegativeButton("Try Again") { _, _ ->
+                detectMarker()
+            }
+            .show()
     }
 
     private fun setupCamera() {
@@ -223,9 +353,12 @@ class TreeTaggingActivity : AppCompatActivity() {
 
                     Toast.makeText(
                         this@TreeTaggingActivity,
-                        "Image captured! Now measure the tree",
+                        "Image captured! Detecting ArUco marker...",
                         Toast.LENGTH_SHORT
                     ).show()
+
+                    // Automatically try to detect marker
+                    detectMarker()
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -249,7 +382,11 @@ class TreeTaggingActivity : AppCompatActivity() {
         val width = widthMeters
 
         if (height == null || width == null) {
-            Toast.makeText(this, "Please measure height and width", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Please measure height and width",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 

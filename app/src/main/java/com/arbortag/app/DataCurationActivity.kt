@@ -15,6 +15,7 @@ import com.arbortag.app.databinding.ActivityDataCurationBinding
 import com.arbortag.app.utils.CsvExporter
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Locale
 
 class DataCurationActivity : AppCompatActivity() {
 
@@ -89,14 +90,20 @@ class DataCurationActivity : AppCompatActivity() {
 
         binding.tvProjectName.text = summary.project.name
         binding.tvTreeCount.text = "Trees Tagged: ${summary.treeCount}"
-        binding.tvAvgHeight.text = "Avg Height: ${String.format("%.2f", summary.avgHeight)} m"
-        binding.tvAvgWidth.text = "Avg Width: ${String.format("%.2f", summary.avgWidth)} m"
-        binding.tvTotalCarbon.text = "Total Carbon: ${String.format("%.2f", summary.totalCarbon)} kg CO₂/year"
+
+        val heightText = String.format(Locale.US, "Avg Height: %.2f m", summary.avgHeight)
+        binding.tvAvgHeight.text = heightText
+
+        val widthText = String.format(Locale.US, "Avg Width: %.2f m", summary.avgWidth)
+        binding.tvAvgWidth.text = widthText
+
+        val carbonText = String.format(Locale.US, "Total Carbon: %.2f kg CO2/year", summary.totalCarbon)
+        binding.tvTotalCarbon.text = carbonText
     }
 
     private fun setupClickListeners() {
         binding.btnExportCsv.setOnClickListener {
-            exportData("csv")
+            exportData()
         }
 
         binding.btnExportExcel.setOnClickListener {
@@ -108,7 +115,7 @@ class DataCurationActivity : AppCompatActivity() {
         }
     }
 
-    private fun exportData(format: String) {
+    private fun exportData() {
         val projectId = selectedProjectId
 
         if (projectId == null) {
@@ -177,6 +184,15 @@ class DataCurationActivity : AppCompatActivity() {
                 val trees = database.treeDao().getTreesByProject(projectId)
                 val project = database.projectDao().getProjectById(projectId)
 
+                if (trees.isEmpty()) {
+                    Toast.makeText(
+                        this@DataCurationActivity,
+                        "No data to share",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
+
                 val exportDir = File(getExternalFilesDir(null), "exports")
                 if (!exportDir.exists()) {
                     exportDir.mkdirs()
@@ -184,11 +200,21 @@ class DataCurationActivity : AppCompatActivity() {
 
                 val fileName = "${project?.name?.replace(" ", "_")}_${System.currentTimeMillis()}.csv"
                 val file = File(exportDir, fileName)
-                CsvExporter.export(trees, file)
+
+                val success = CsvExporter.export(trees, file)
+
+                if (!success) {
+                    Toast.makeText(
+                        this@DataCurationActivity,
+                        "Failed to create export file",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
 
                 val uri = FileProvider.getUriForFile(
                     this@DataCurationActivity,
-                    "${packageName}.fileprovider",
+                    "com.arbortag.app.fileprovider",
                     file
                 )
 

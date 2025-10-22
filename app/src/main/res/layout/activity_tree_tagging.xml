@@ -37,10 +37,63 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Measure Tree Dimensions"
+                android:text="ArUco-Based Measurement"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/primary_text"/>
+
+            <!-- ArUco Marker Status Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardElevation="4dp"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="#E3F2FD">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:id="@+id/tvMarkerStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⌛ Detecting Marker..."
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary_text"/>
+
+                    <TextView
+                        android:id="@+id/tvPixelRatio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ratio: -- px/m"
+                        android:textSize="14sp"
+                        android:textColor="@color/secondary_text"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRecalibrate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔄 Detect Marker"
+                        android:layout_marginTop="8dp"
+                        style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"/>
 
             <ImageView
                 android:id="@+id/ivCapturedImage"
@@ -48,48 +101,53 @@
                 android:layout_height="300dp"
                 android:layout_marginTop="16dp"
                 android:scaleType="centerCrop"
-                android:background="@color/divider"/>
+                android:background="@color/divider"
+                android:contentDescription="Captured tree image"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tap two points on the image to measure"
-                android:textSize="14sp"
+                android:text="ℹ️ Tap two points on the image to measure distance"
+                android:textSize="13sp"
                 android:textColor="@color/secondary_text"
                 android:layout_marginTop="8dp"/>
 
             <!-- Measurement Buttons -->
             <LinearLayout
+                android:id="@+id/layoutMeasurementButtons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="16dp"
-                android:gravity="center">
+                android:gravity="center"
+                android:visibility="gone">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnMeasureHeight"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Height"
-                    android:layout_marginEnd="8dp"
-                    style="@style/Widget.Material3.Button.OutlinedButton"/>
+                    android:text="📏 Height"
+                    android:layout_marginEnd="4dp"
+                    style="@style/Widget.Material3.Button"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnMeasureWidth"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Width"
-                    android:layout_marginEnd="8dp"
-                    style="@style/Widget.Material3.Button.OutlinedButton"/>
+                    android:text="📐 Width"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    style="@style/Widget.Material3.Button"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnMeasureCanopy"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Canopy"
+                    android:text="🌳 Canopy"
+                    android:layout_marginStart="4dp"
                     style="@style/Widget.Material3.Button.OutlinedButton"/>
             </LinearLayout>
 
@@ -110,7 +168,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Measurements"
+                        android:text="📊 Measurements"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/primary_text"/>
@@ -187,7 +245,8 @@
                 android:id="@+id/btnNextStep"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Next: Select Species"
+                android:text="Next: Select Species ➔"
+                android:textSize="16sp"
                 android:layout_marginTop="16dp"/>
 
         </LinearLayout>
