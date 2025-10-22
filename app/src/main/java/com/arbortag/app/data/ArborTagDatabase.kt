@@ -6,14 +6,15 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [Project::class, Tree::class, Species::class],
-    version = 1,
+    entities = [Project::class, Tree::class, Species::class, ArUcoMarker::class],
+    version = 2,
     exportSchema = false
 )
 abstract class ArborTagDatabase : RoomDatabase() {
     abstract fun projectDao(): ProjectDao
     abstract fun treeDao(): TreeDao
     abstract fun speciesDao(): SpeciesDao
+    abstract fun arUcoMarkerDao(): ArUcoMarkerDao
 
     companion object {
         @Volatile

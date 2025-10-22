@@ -58,3 +58,27 @@ interface SpeciesDao {
     @Query("SELECT * FROM species WHERE scientificName = :scientificName")
     suspend fun getSpeciesByScientificName(scientificName: String): Species?
 }
+
+@Dao
+interface ArUcoMarkerDao {
+    @Insert
+    suspend fun insert(marker: ArUcoMarker): Long
+
+    @Update
+    suspend fun update(marker: ArUcoMarker)
+
+    @Delete
+    suspend fun delete(marker: ArUcoMarker)
+
+    @Query("SELECT * FROM aruco_markers WHERE projectId = :projectId ORDER BY detectionDate DESC")
+    suspend fun getMarkersByProject(projectId: Long): List<ArUcoMarker>
+
+    @Query("SELECT * FROM aruco_markers WHERE id = :markerId")
+    suspend fun getMarkerById(markerId: Long): ArUcoMarker?
+
+    @Query("SELECT * FROM aruco_markers WHERE projectId = :projectId ORDER BY detectionDate DESC LIMIT 1")
+    suspend fun getLatestMarkerByProject(projectId: Long): ArUcoMarker?
+
+    @Query("DELETE FROM aruco_markers WHERE projectId = :projectId")
+    suspend fun deleteMarkersByProject(projectId: Long)
+}

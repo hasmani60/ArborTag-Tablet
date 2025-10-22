@@ -47,6 +47,29 @@ data class Species(
     val carbonFactor: Double
 )
 
+// ArUco Marker Entity
+@Entity(
+    tableName = "aruco_markers",
+    foreignKeys = [ForeignKey(
+        entity = Project::class,
+        parentColumns = ["id"],
+        childColumns = ["projectId"],
+        onDelete = ForeignKey.CASCADE
+    )]
+)
+data class ArUcoMarker(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val projectId: Long,
+    val markerId: Int,
+    val markerSizeMeters: Double,
+    val pixelToMeterRatio: Double,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val detectionDate: Long = System.currentTimeMillis(),
+    val imagePath: String? = null
+)
+
 // Project Summary for UI
 data class ProjectSummary(
     val project: Project,
