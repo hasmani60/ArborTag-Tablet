@@ -1,9 +1,12 @@
 package com.arbortag.app
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -19,6 +22,7 @@ import com.arbortag.app.utils.AnalysisApiClient
 import com.arbortag.app.utils.ExportManager
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
 
 class DataAnalysisActivity : AppCompatActivity() {
 
@@ -30,6 +34,8 @@ class DataAnalysisActivity : AppCompatActivity() {
 
     // Store chart data for export
     private val chartData = mutableMapOf<String, ByteArray>()
+    private var currentChartName: String? = null
+    private var currentChartBytes: ByteArray? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +53,7 @@ class DataAnalysisActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // menuInflater.inflate(R.menu.menu_analysis, menu)
+        menuInflater.inflate(R.menu.menu_analysis, menu)
         return true
     }
 
@@ -57,14 +63,10 @@ class DataAnalysisActivity : AppCompatActivity() {
                 finish()
                 true
             }
-            // R.id.action_export_all -> {
-            //     exportAllAnalyses()
-            //     true
-            // }
-            // R.id.action_clear_cache -> {
-            //     clearAnalysisCache()
-            //     true
-            // }
+            R.id.action_export_all -> {
+                exportAllAnalyses()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -98,7 +100,7 @@ class DataAnalysisActivity : AppCompatActivity() {
                     ) {
                         selectedProjectId = projects[position].id
                         loadProjectStats()
-                        chartData.clear() // Clear previous chart data
+                        chartData.clear()
                     }
 
                     override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
@@ -162,33 +164,18 @@ class DataAnalysisActivity : AppCompatActivity() {
             generateSummary()
         }
 
-        // Export buttons - comment out if these buttons don't exist in your layout
-        // Uncomment when you add these buttons to activity_data_analysis.xml
-        /*
-        binding.btnExportDistributionPng.setOnClickListener {
-            exportChart("distribution", "Species_Distribution", ExportFormat.PNG)
+        // Export buttons
+        binding.btnExportCurrentPng.setOnClickListener {
+            exportCurrentChart(ExportFormat.PNG)
         }
 
-        binding.btnExportDistributionPdf.setOnClickListener {
-            exportChart("distribution", "Species_Distribution", ExportFormat.PDF)
+        binding.btnExportCurrentPdf.setOnClickListener {
+            exportCurrentChart(ExportFormat.PDF)
         }
 
-        binding.btnExportHeightPng.setOnClickListener {
-            exportChart("height", "Height_Analysis", ExportFormat.PNG)
+        binding.btnExportAllCharts.setOnClickListener {
+            exportAllChartsDialog()
         }
-
-        binding.btnExportHeightPdf.setOnClickListener {
-            exportChart("height", "Height_Analysis", ExportFormat.PDF)
-        }
-
-        binding.btnExportWidthPng.setOnClickListener {
-            exportChart("width", "Width_Analysis", ExportFormat.PNG)
-        }
-
-        binding.btnExportWidthPdf.setOnClickListener {
-            exportChart("width", "Width_Analysis", ExportFormat.PDF)
-        }
-        */
     }
 
     private fun openInteractiveMap(mapType: String) {
@@ -237,7 +224,7 @@ class DataAnalysisActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.VISIBLE
         binding.ivAnalysisResult.visibility = View.GONE
         binding.tvAnalysisResult.visibility = View.GONE
-        // binding.layoutExportButtons.visibility = View.GONE
+        binding.layoutExportButtons.visibility = View.GONE
 
         lifecycleScope.launch {
             try {
@@ -264,13 +251,14 @@ class DataAnalysisActivity : AppCompatActivity() {
                 if (imageBytes != null) {
                     // Store for export
                     chartData[type] = imageBytes
+                    currentChartName = title
+                    currentChartBytes = imageBytes
 
                     val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
                     binding.ivAnalysisResult.setImageBitmap(bitmap)
                     binding.ivAnalysisResult.visibility = View.VISIBLE
                     binding.tvAnalysisResult.visibility = View.GONE
-                    // binding.layoutExportButtons.visibility = View.VISIBLE
-                    // binding.tvCurrentChartTitle.text = title
+                    binding.layoutExportButtons.visibility = View.VISIBLE
                 } else {
                     throw Exception("Failed to generate analysis")
                 }
@@ -298,7 +286,7 @@ class DataAnalysisActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.VISIBLE
         binding.ivAnalysisResult.visibility = View.GONE
         binding.tvAnalysisResult.visibility = View.GONE
-        // binding.layoutExportButtons.visibility = View.GONE
+        binding.layoutExportButtons.visibility = View.GONE
 
         lifecycleScope.launch {
             try {
@@ -336,16 +324,16 @@ class DataAnalysisActivity : AppCompatActivity() {
         PNG, PDF
     }
 
-    private fun exportChart(chartType: String, chartName: String, format: ExportFormat) {
+    /**
+     * Export current visible chart
+     */
+    private fun exportCurrentChart(format: ExportFormat) {
         val projectId = selectedProjectId
-        if (projectId == null) {
-            Toast.makeText(this, "Please select a project first", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val chartBytes = currentChartBytes
+        val chartName = currentChartName
 
-        val imageBytes = chartData[chartType]
-        if (imageBytes == null) {
-            Toast.makeText(this, "Please generate the chart first", Toast.LENGTH_SHORT).show()
+        if (projectId == null || chartBytes == null || chartName == null) {
+            Toast.makeText(this, "Please generate a chart first", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -358,33 +346,15 @@ class DataAnalysisActivity : AppCompatActivity() {
 
                 when (format) {
                     ExportFormat.PNG -> {
-                        val file = exportManager.exportChartAsPNG(
-                            imageBytes,
-                            chartName,
-                            projectName
-                        )
-
+                        val file = exportChartAsPNG(chartBytes, chartName, projectName)
                         if (file != null) {
                             showExportSuccessDialog(file, "PNG")
-                        } else {
-                            throw Exception("Failed to export PNG")
                         }
                     }
-
                     ExportFormat.PDF -> {
-                        val trees = database.treeDao().getTreesByProject(projectId)
-                        val charts = mapOf(chartName to imageBytes)
-
-                        val file = exportManager.generateProjectPDF(
-                            project!!,
-                            trees,
-                            charts
-                        )
-
+                        val file = exportChartAsPDF(chartBytes, chartName, projectName)
                         if (file != null) {
                             showExportSuccessDialog(file, "PDF")
-                        } else {
-                            throw Exception("Failed to export PDF")
                         }
                     }
                 }
@@ -402,29 +372,123 @@ class DataAnalysisActivity : AppCompatActivity() {
         }
     }
 
-    private fun exportAllAnalyses() {
-        val projectId = selectedProjectId
-        if (projectId == null) {
-            Toast.makeText(this, "Please select a project first", Toast.LENGTH_SHORT).show()
-            return
-        }
+    /**
+     * Export chart as PNG
+     */
+    private fun exportChartAsPNG(
+        imageBytes: ByteArray,
+        chartName: String,
+        projectName: String
+    ): File? {
+        return try {
+            val fileName = "${projectName}_${chartName}_${System.currentTimeMillis()}.png"
+            val exportDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "ArborTag_Exports")
+            if (!exportDir.exists()) {
+                exportDir.mkdirs()
+            }
 
+            val file = File(exportDir, fileName)
+
+            FileOutputStream(file).use { output ->
+                output.write(imageBytes)
+            }
+
+            file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Export chart as PDF
+     */
+    private fun exportChartAsPDF(
+        imageBytes: ByteArray,
+        chartName: String,
+        projectName: String
+    ): File? {
+        return try {
+            val fileName = "${projectName}_${chartName}_${System.currentTimeMillis()}.pdf"
+            val exportDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "ArborTag_Exports")
+            if (!exportDir.exists()) {
+                exportDir.mkdirs()
+            }
+
+            val file = File(exportDir, fileName)
+
+            // Create PDF document
+            val pdfDocument = PdfDocument()
+            val pageInfo = PdfDocument.PageInfo.Builder(842, 595, 1).create() // A4 landscape
+            val page = pdfDocument.startPage(pageInfo)
+
+            // Decode bitmap
+            val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+            // Scale bitmap to fit page
+            val canvas = page.canvas
+            val scaleFactor = Math.min(
+                pageInfo.pageWidth.toFloat() / bitmap.width,
+                pageInfo.pageHeight.toFloat() / bitmap.height
+            )
+
+            val scaledWidth = bitmap.width * scaleFactor
+            val scaledHeight = bitmap.height * scaleFactor
+
+            val left = (pageInfo.pageWidth - scaledWidth) / 2
+            val top = (pageInfo.pageHeight - scaledHeight) / 2
+
+            val destRect = android.graphics.RectF(
+                left,
+                top,
+                left + scaledWidth,
+                top + scaledHeight
+            )
+
+            canvas.drawBitmap(bitmap, null, destRect, null)
+
+            pdfDocument.finishPage(page)
+
+            // Save to file
+            FileOutputStream(file).use { output ->
+                pdfDocument.writeTo(output)
+            }
+
+            pdfDocument.close()
+
+            file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Dialog to export all generated charts
+     */
+    private fun exportAllChartsDialog() {
         if (chartData.isEmpty()) {
-            Toast.makeText(this, "Please generate at least one analysis first", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Please generate at least one chart first", Toast.LENGTH_SHORT).show()
             return
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Export All Analyses")
-            .setMessage("This will export all generated charts as PNG files and create a comprehensive PDF report.")
-            .setPositiveButton("Export") { _, _ ->
-                performBatchExport()
+            .setTitle("Export All Charts")
+            .setMessage("Export all generated charts as:\n\n• Individual PNG files\n• Combined PDF report")
+            .setPositiveButton("Export Both") { _, _ ->
+                exportAllCharts(both = true)
+            }
+            .setNeutralButton("PNG Only") { _, _ ->
+                exportAllCharts(pngOnly = true)
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun performBatchExport() {
+    /**
+     * Export all generated charts
+     */
+    private fun exportAllCharts(both: Boolean = false, pngOnly: Boolean = false) {
         val projectId = selectedProjectId ?: return
 
         lifecycleScope.launch {
@@ -432,14 +496,36 @@ class DataAnalysisActivity : AppCompatActivity() {
                 binding.progressBar.visibility = View.VISIBLE
 
                 val project = database.projectDao().getProjectById(projectId)!!
-                val trees = database.treeDao().getTreesByProject(projectId)
+                val projectName = project.name
 
-                val files = exportManager.exportBatchAnalyses(project, trees, chartData)
+                val exportedFiles = mutableListOf<File>()
+
+                // Export PNGs
+                chartData.forEach { (type, bytes) ->
+                    val chartName = when (type) {
+                        "distribution" -> "Species_Distribution"
+                        "height" -> "Height_Analysis"
+                        "width" -> "Width_Analysis"
+                        else -> type
+                    }
+
+                    exportChartAsPNG(bytes, chartName, projectName)?.let {
+                        exportedFiles.add(it)
+                    }
+                }
+
+                // Export PDF if requested
+                if (both) {
+                    val trees = database.treeDao().getTreesByProject(projectId)
+                    exportManager.generateProjectPDF(project, trees, chartData)?.let {
+                        exportedFiles.add(it)
+                    }
+                }
 
                 binding.progressBar.visibility = View.GONE
 
-                if (files.isNotEmpty()) {
-                    showBatchExportSuccessDialog(files)
+                if (exportedFiles.isNotEmpty()) {
+                    showBatchExportSuccessDialog(exportedFiles)
                 } else {
                     throw Exception("No files were exported")
                 }
@@ -455,30 +541,36 @@ class DataAnalysisActivity : AppCompatActivity() {
         }
     }
 
+    private fun exportAllAnalyses() {
+        exportAllChartsDialog()
+    }
+
     private fun showExportSuccessDialog(file: File, format: String) {
         AlertDialog.Builder(this)
-            .setTitle("Export Successful")
-            .setMessage("$format file saved to:\n${file.absolutePath}")
+            .setTitle("✓ Export Successful")
+            .setMessage("$format file saved:\n${file.name}\n\nLocation:\n${file.parent}")
             .setPositiveButton("Open") { _, _ ->
                 openFile(file)
             }
-            .setNegativeButton("Share") { _, _ ->
+            .setNeutralButton("Share") { _, _ ->
                 shareFile(file)
             }
-            .setNeutralButton("OK", null)
+            .setNegativeButton("OK", null)
             .show()
     }
 
     private fun showBatchExportSuccessDialog(files: List<File>) {
-        val message = "Exported ${files.size} files to:\n${exportManager.getExportDirectoryPath()}"
+        val message = "Successfully exported ${files.size} files:\n\n" +
+                files.joinToString("\n") { "• ${it.name}" } +
+                "\n\nLocation:\n${files.first().parent}"
 
         AlertDialog.Builder(this)
-            .setTitle("Batch Export Successful")
+            .setTitle("✓ Batch Export Successful")
             .setMessage(message)
             .setPositiveButton("Open Folder") { _, _ ->
                 openExportFolder()
             }
-            .setNeutralButton("OK", null)
+            .setNegativeButton("OK", null)
             .show()
     }
 
@@ -512,7 +604,7 @@ class DataAnalysisActivity : AppCompatActivity() {
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = getMimeType(file)
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, "ArborTag Analysis")
+                putExtra(Intent.EXTRA_SUBJECT, "ArborTag Analysis - ${file.nameWithoutExtension}")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
@@ -524,13 +616,27 @@ class DataAnalysisActivity : AppCompatActivity() {
 
     private fun openExportFolder() {
         try {
+            val exportDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "ArborTag_Exports")
+            val uri = FileProvider.getUriForFile(
+                this,
+                "com.arbortag.app.fileprovider",
+                exportDir
+            )
+
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(Uri.parse(exportManager.getExportDirectoryPath()), "resource/folder")
+                setDataAndType(uri, "resource/folder")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
+
             startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(this, "Please use a file manager to view: ${exportManager.getExportDirectoryPath()}", Toast.LENGTH_LONG).show()
+            val exportDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "ArborTag_Exports")
+            Toast.makeText(
+                this,
+                "Files saved to:\n${exportDir.absolutePath}",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -540,14 +646,6 @@ class DataAnalysisActivity : AppCompatActivity() {
             "png" -> "image/png"
             else -> "*/*"
         }
-    }
-
-    private fun clearAnalysisCache() {
-        chartData.clear()
-        binding.ivAnalysisResult.visibility = View.GONE
-        binding.tvAnalysisResult.visibility = View.GONE
-        // binding.layoutExportButtons.visibility = View.GONE
-        Toast.makeText(this, "Analysis cache cleared", Toast.LENGTH_SHORT).show()
     }
 
     private suspend fun createTempCsvFile(trees: List<com.arbortag.app.data.Tree>): File {

@@ -1,0 +1,19 @@
+<resources>
+    <!-- Tablet-specific spacing -->
+    <dimen name="spacing_medium">24dp</dimen>
+    <dimen name="spacing_large">32dp</dimen>
+    <dimen name="spacing_xlarge">48dp</dimen>
+
+    <!-- Larger cards -->
+    <dimen name="card_radius">16dp</dimen>
+    <dimen name="card_elevation">6dp</dimen>
+    <dimen name="card_padding">24dp</dimen>
+
+    <!-- Larger buttons -->
+    <dimen name="button_height">64dp</dimen>
+
+    <!-- Larger text -->
+    <dimen name="text_display">42sp</dimen>
+    <dimen name="text_headline">28sp</dimen>
+    <dimen name="text_title">24sp</dimen>
+</resources>

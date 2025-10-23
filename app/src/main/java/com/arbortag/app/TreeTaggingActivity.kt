@@ -157,7 +157,10 @@ class TreeTaggingActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupImageViewTouchListener() {
-        binding.ivCapturedImage.setOnTouchListener { _, event ->
+        // FIXED: Use the correct ID from layout: ivMeasurementImage (not ivCapturedImage)
+        val imageView = binding.root.findViewById<com.arbortag.app.views.ZoomableImageView>(R.id.ivMeasurementImage)
+
+        imageView?.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN &&
                 currentMeasurementMode != MeasurementMode.NONE) {
 
@@ -218,50 +221,43 @@ class TreeTaggingActivity : AppCompatActivity() {
         capturedBitmap?.let { bitmap ->
             val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
             val canvas = Canvas(mutableBitmap)
+
             val paint = Paint().apply {
                 color = Color.RED
                 style = Paint.Style.FILL
+                strokeWidth = 5f
             }
+
             canvas.drawCircle(x, y, 15f, paint)
 
-            // Draw line if we have 2 points
-            if (measurementPoints.size == 1) {
-                val linePaint = Paint().apply {
-                    color = Color.GREEN
-                    strokeWidth = 5f
-                }
-                canvas.drawLine(
-                    measurementPoints[0].first,
-                    measurementPoints[0].second,
-                    x, y,
-                    linePaint
-                )
-            }
-
-            binding.ivCapturedImage.setImageBitmap(mutableBitmap)
+            // Update the displayed image
             capturedBitmap = mutableBitmap
+            // FIXED: Use correct ID: ivMeasurementImage
+            val imageView = binding.root.findViewById<com.arbortag.app.views.ZoomableImageView>(R.id.ivMeasurementImage)
+            imageView?.setImageBitmap(mutableBitmap)
         }
     }
 
     private fun calculateMeasurement() {
-        if (measurementPoints.size < 2) return
-
-        val point1 = measurementPoints[0]
-        val point2 = measurementPoints[1]
+        if (measurementPoints.size != 2) return
 
         try {
-            // Use ArUco helper to calculate real distance
-            val realDistance = arucoHelper?.calculateDistance(point1, point2) ?: 0.0
-
-            // Annotate the image
-            capturedBitmap = arucoHelper?.annotateMeasurement(
-                capturedBitmap!!,
-                point1,
-                point2,
-                realDistance
+            // FIXED: Use the calculateDistance method from ArUcoMeasurementHelper
+            val realDistance = arucoHelper?.calculateDistance(
+                measurementPoints[0],
+                measurementPoints[1]
             )
-            binding.ivCapturedImage.setImageBitmap(capturedBitmap)
 
+            if (realDistance == null) {
+                Toast.makeText(
+                    this,
+                    "❌ Calibration error. Please detect marker again.",
+                    Toast.LENGTH_LONG
+                ).show()
+                return
+            }
+
+            // Update appropriate measurement
             when (currentMeasurementMode) {
                 MeasurementMode.HEIGHT -> {
                     heightMeters = realDistance
@@ -299,7 +295,10 @@ class TreeTaggingActivity : AppCompatActivity() {
 
     private fun detectMarker() {
         capturedBitmap?.let { bitmap ->
-            binding.progressBar.visibility = View.VISIBLE
+            // FIXED: Use correct ID: progressAruco (not progressBar)
+            val progressBar = binding.root.findViewById<View>(R.id.progressAruco)
+            progressBar?.visibility = View.VISIBLE
+
             binding.tvMarkerStatus.text = "⌛ Detecting marker..."
             binding.tvMarkerStatus.setTextColor(getColor(R.color.warning))
 
@@ -308,7 +307,7 @@ class TreeTaggingActivity : AppCompatActivity() {
                 val detected = arucoHelper?.detectMarkerAndCalculateRatio(bitmap) ?: false
 
                 runOnUiThread {
-                    binding.progressBar.visibility = View.GONE
+                    progressBar?.visibility = View.GONE
 
                     if (detected) {
                         binding.tvMarkerStatus.text = "✓ Marker Detected"
@@ -318,7 +317,10 @@ class TreeTaggingActivity : AppCompatActivity() {
                             arucoHelper?.getPixelToMeterRatio() ?: 0.0
                         )
                         binding.tvPixelRatio.visibility = View.VISIBLE
-                        binding.layoutMeasurementButtons.visibility = View.VISIBLE
+
+                        // FIXED: Use correct ID: measurementToolbar (not layoutMeasurementButtons)
+                        val measurementButtons = binding.root.findViewById<View>(R.id.measurementToolbar)
+                        measurementButtons?.visibility = View.VISIBLE
 
                         Toast.makeText(
                             this,
@@ -329,7 +331,10 @@ class TreeTaggingActivity : AppCompatActivity() {
                         binding.tvMarkerStatus.text = "✗ No Marker Found"
                         binding.tvMarkerStatus.setTextColor(getColor(R.color.error))
                         binding.tvPixelRatio.visibility = View.GONE
-                        binding.layoutMeasurementButtons.visibility = View.GONE
+
+                        // FIXED: Use correct ID: measurementToolbar
+                        val measurementButtons = binding.root.findViewById<View>(R.id.measurementToolbar)
+                        measurementButtons?.visibility = View.GONE
 
                         showMarkerNotFoundDialog()
                     }
@@ -456,7 +461,9 @@ class TreeTaggingActivity : AppCompatActivity() {
 
     private fun displayCapturedImage(imageFile: File) {
         capturedBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
-        binding.ivCapturedImage.setImageBitmap(capturedBitmap)
+        // FIXED: Use correct ID: ivMeasurementImage
+        val imageView = binding.root.findViewById<com.arbortag.app.views.ZoomableImageView>(R.id.ivMeasurementImage)
+        imageView?.setImageBitmap(capturedBitmap)
         Log.d(TAG, "Image loaded: ${capturedBitmap?.width}x${capturedBitmap?.height}")
     }
 

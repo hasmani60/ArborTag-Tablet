@@ -4,444 +4,435 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light"
+    android:background="@color/background_primary"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="@dimen/spacing_medium">
 
         <!-- Header -->
         <TextView
+            style="@style/TextHeadline"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Data Analysis"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="@color/primary"
-            android:layout_marginBottom="4dp"/>
+            android:layout_marginBottom="@dimen/spacing_tiny"/>
 
         <TextView
+            style="@style/TextSecondary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Generate insights from your tree data"
-            android:textSize="14sp"
-            android:textColor="@color/secondary_text"
-            android:layout_marginBottom="16dp"/>
+            android:text="Generate comprehensive insights from your tree data"
+            android:layout_marginBottom="@dimen/spacing_large"/>
 
-        <!-- Project Selection -->
+        <!-- Project Selection Card -->
         <com.google.android.material.card.MaterialCardView
+            style="@style/AppCard"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardElevation="4dp"
-            app:cardCornerRadius="12dp">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="vertical">
 
                 <TextView
+                    style="@style/TextBody"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Select Project"
-                    android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="@color/primary_text"
-                    android:layout_marginBottom="8dp"/>
+                    android:layout_marginBottom="@dimen/spacing_small"/>
 
                 <Spinner
                     android:id="@+id/spinnerProject"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"/>
+                    android:minHeight="56dp"
+                    android:background="@drawable/spinner_background"/>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Quick Stats -->
+        <!-- Quick Stats Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/layoutStats"
+            style="@style/AppCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
             android:visibility="gone"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp"
             app:cardBackgroundColor="@color/primary_light">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="vertical">
 
                 <TextView
+                    style="@style/TextBody"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📊 Quick Statistics"
-                    android:textSize="16sp"
+                    android:text="📊 Project Overview"
                     android:textStyle="bold"
-                    android:textColor="@color/primary_text"
-                    android:layout_marginBottom="8dp"/>
+                    android:textColor="@color/primary"
+                    android:layout_marginBottom="@dimen/spacing_small"/>
 
                 <TextView
                     android:id="@+id/tvStatsContent"
+                    style="@style/TextBody"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
-                    android:textColor="@color/primary_text"
                     android:fontFamily="monospace"
-                    android:lineSpacingExtra="2dp"/>
+                    android:lineSpacingExtra="4dp"/>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- No Projects Message -->
         <TextView
             android:id="@+id/tvNoProjects"
+            style="@style/TextBody"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="@dimen/spacing_xxlarge"
             android:text="No projects available.\nCreate a project and tag some trees first!"
             android:textAlignment="center"
-            android:textSize="16sp"
-            android:textColor="@color/secondary_text"
-            android:visibility="gone"
-            android:layout_gravity="center_horizontal"/>
+            android:textColor="@color/text_secondary"
+            android:visibility="gone"/>
 
         <!-- Analysis Options -->
         <LinearLayout
             android:id="@+id/layoutAnalysisOptions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginBottom="16dp">
+            android:orientation="vertical">
 
             <TextView
+                style="@style/TextTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Generate Analysis"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@color/primary_text"
-                android:layout_marginBottom="12dp"/>
+                android:layout_marginTop="@dimen/spacing_large"
+                android:layout_marginBottom="@dimen/spacing_medium"
+                android:text="Generate Analysis"/>
 
-            <!-- Distribution Button -->
+            <!-- Distribution Analysis -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnDistribution"
+                style="@style/AppCard.Action"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardElevation="2dp"
-                app:cardCornerRadius="10dp">
+                android:layout_height="wrap_content">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="16dp"
                     android:gravity="center_vertical">
 
                     <TextView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="@dimen/icon_medium"
+                        android:layout_height="@dimen/icon_medium"
                         android:text="📊"
-                        android:textSize="28sp"
-                        android:gravity="center"/>
+                        android:textSize="24sp"
+                        android:gravity="center"
+                        android:layout_marginEnd="@dimen/spacing_medium"/>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="12dp">
+                        android:orientation="vertical">
 
                         <TextView
+                            style="@style/TextBody"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Species Distribution"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary_text"/>
+                            android:textStyle="bold"/>
 
                         <TextView
+                            style="@style/TextSecondary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="View pie chart of species composition"
-                            android:textSize="13sp"
-                            android:textColor="@color/secondary_text"
-                            android:layout_marginTop="2dp"/>
+                            android:text="Pie chart of species composition"/>
+
                     </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_small"
+                        android:layout_height="@dimen/icon_small"
+                        android:src="@android:drawable/ic_menu_view"
+                        android:contentDescription="View"
+                        app:tint="@color/primary"/>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Height Button -->
+            <!-- Height Analysis -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnHeight"
+                style="@style/AppCard.Action"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardElevation="2dp"
-                app:cardCornerRadius="10dp">
+                android:layout_height="wrap_content">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="16dp"
                     android:gravity="center_vertical">
 
                     <TextView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="@dimen/icon_medium"
+                        android:layout_height="@dimen/icon_medium"
                         android:text="📏"
-                        android:textSize="28sp"
-                        android:gravity="center"/>
+                        android:textSize="24sp"
+                        android:gravity="center"
+                        android:layout_marginEnd="@dimen/spacing_medium"/>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="12dp">
+                        android:orientation="vertical">
 
                         <TextView
+                            style="@style/TextBody"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Height Analysis"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary_text"/>
+                            android:textStyle="bold"/>
 
                         <TextView
+                            style="@style/TextSecondary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Compare tree heights"
-                            android:textSize="13sp"
-                            android:textColor="@color/secondary_text"
-                            android:layout_marginTop="2dp"/>
+                            android:text="Compare tree heights by species"/>
+
                     </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_small"
+                        android:layout_height="@dimen/icon_small"
+                        android:src="@android:drawable/ic_menu_view"
+                        android:contentDescription="View"
+                        app:tint="@color/primary"/>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Width Button -->
+            <!-- Width Analysis -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnWidth"
+                style="@style/AppCard.Action"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardElevation="2dp"
-                app:cardCornerRadius="10dp">
+                android:layout_height="wrap_content">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="16dp"
                     android:gravity="center_vertical">
 
                     <TextView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="@dimen/icon_medium"
+                        android:layout_height="@dimen/icon_medium"
                         android:text="📐"
-                        android:textSize="28sp"
-                        android:gravity="center"/>
+                        android:textSize="24sp"
+                        android:gravity="center"
+                        android:layout_marginEnd="@dimen/spacing_medium"/>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="12dp">
+                        android:orientation="vertical">
 
                         <TextView
+                            style="@style/TextBody"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Width Analysis"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary_text"/>
+                            android:textStyle="bold"/>
 
                         <TextView
+                            style="@style/TextSecondary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Compare average trunk widths"
-                            android:textSize="13sp"
-                            android:textColor="@color/secondary_text"
-                            android:layout_marginTop="2dp"/>
+                            android:text="Average trunk width by species"/>
+
                     </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_small"
+                        android:layout_height="@dimen/icon_small"
+                        android:src="@android:drawable/ic_menu_view"
+                        android:contentDescription="View"
+                        app:tint="@color/primary"/>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Heatmap Button - from python_heatmap_png1.py -->
+            <!-- Heatmap -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnHeatmap"
+                style="@style/AppCard.Action"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardElevation="2dp"
-                app:cardCornerRadius="10dp"
                 app:cardBackgroundColor="#FFF3E0">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="16dp"
                     android:gravity="center_vertical">
 
                     <TextView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="@dimen/icon_medium"
+                        android:layout_height="@dimen/icon_medium"
                         android:text="🗺️"
-                        android:textSize="28sp"
-                        android:gravity="center"/>
+                        android:textSize="24sp"
+                        android:gravity="center"
+                        android:layout_marginEnd="@dimen/spacing_medium"/>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="12dp">
+                        android:orientation="vertical">
 
                         <TextView
+                            style="@style/TextBody"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Carbon Heatmap"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary_text"/>
+                            android:textStyle="bold"/>
 
                         <TextView
+                            style="@style/TextSecondary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Geographic carbon sequestration map"
-                            android:textSize="13sp"
-                            android:textColor="@color/secondary_text"
-                            android:layout_marginTop="2dp"/>
+                            android:text="Geographic carbon sequestration map"/>
+
                     </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_small"
+                        android:layout_height="@dimen/icon_small"
+                        android:src="@android:drawable/ic_menu_mapmode"
+                        android:contentDescription="View"
+                        app:tint="@color/accent"/>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Diversity Button - NEW from python_diversity_png1.py -->
+            <!-- Diversity Map -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnDiversity"
+                style="@style/AppCard.Action"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardElevation="2dp"
-                app:cardCornerRadius="10dp"
                 app:cardBackgroundColor="#E3F2FD">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="16dp"
                     android:gravity="center_vertical">
 
                     <TextView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="@dimen/icon_medium"
+                        android:layout_height="@dimen/icon_medium"
                         android:text="🌈"
-                        android:textSize="28sp"
-                        android:gravity="center"/>
+                        android:textSize="24sp"
+                        android:gravity="center"
+                        android:layout_marginEnd="@dimen/spacing_medium"/>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="12dp">
+                        android:orientation="vertical">
 
                         <TextView
+                            style="@style/TextBody"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Diversity Map"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary_text"/>
+                            android:textStyle="bold"/>
 
                         <TextView
+                            style="@style/TextSecondary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Color-coded species distribution map"
-                            android:textSize="13sp"
-                            android:textColor="@color/secondary_text"
-                            android:layout_marginTop="2dp"/>
+                            android:text="Color-coded species distribution"/>
+
                     </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_small"
+                        android:layout_height="@dimen/icon_small"
+                        android:src="@android:drawable/ic_menu_mapmode"
+                        android:contentDescription="View"
+                        app:tint="@color/info"/>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Summary Button -->
+            <!-- Summary -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnSummary"
+                style="@style/AppCard.Action"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardElevation="4dp"
-                app:cardCornerRadius="10dp"
                 app:cardBackgroundColor="@color/primary">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="16dp"
                     android:gravity="center_vertical">
 
                     <TextView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="@dimen/icon_medium"
+                        android:layout_height="@dimen/icon_medium"
                         android:text="📋"
-                        android:textSize="28sp"
-                        android:gravity="center"/>
+                        android:textSize="24sp"
+                        android:gravity="center"
+                        android:layout_marginEnd="@dimen/spacing_medium"/>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="12dp">
+                        android:orientation="vertical">
 
                         <TextView
+                            style="@style/TextBody"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Comprehensive Summary"
-                            android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="@color/white"/>
+                            android:textColor="@color/text_on_primary"/>
 
                         <TextView
+                            style="@style/TextSecondary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Complete project overview"
-                            android:textSize="13sp"
-                            android:textColor="#E8F5E9"
-                            android:layout_marginTop="2dp"/>
+                            android:text="Complete project overview with statistics"
+                            android:textColor="#E8F5E9"/>
+
                     </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_small"
+                        android:layout_height="@dimen/icon_small"
+                        android:src="@android:drawable/ic_menu_view"
+                        android:contentDescription="View"
+                        app:tint="@color/text_on_primary"/>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -453,23 +444,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginVertical="@dimen/spacing_large"
             android:visibility="gone"/>
 
         <!-- Analysis Result Card -->
         <com.google.android.material.card.MaterialCardView
+            style="@style/AppCard"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardElevation="4dp"
-            app:cardCornerRadius="12dp">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <!-- Chart Image -->
                 <ImageView
                     android:id="@+id/ivAnalysisResult"
                     android:layout_width="match_parent"
@@ -479,6 +468,7 @@
                     android:visibility="gone"
                     android:contentDescription="Analysis Chart"/>
 
+                <!-- Text Result -->
                 <ScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -486,18 +476,71 @@
 
                     <TextView
                         android:id="@+id/tvAnalysisResult"
+                        style="@style/TextBody"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:padding="16dp"
-                        android:textSize="14sp"
-                        android:textColor="@color/primary_text"
+                        android:padding="@dimen/card_padding"
                         android:fontFamily="monospace"
                         android:visibility="gone"/>
 
                 </ScrollView>
 
-            </LinearLayout>
+                <!-- Export Buttons -->
+                <LinearLayout
+                    android:id="@+id/layoutExportButtons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/spacing_medium"
+                    android:visibility="gone">
 
+                    <TextView
+                        style="@style/TextBody"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Export Options"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="@dimen/spacing_small"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnExportCurrentPng"
+                            style="@style/AppButton.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="@dimen/spacing_small"
+                            android:text="📥 PNG"
+                            android:textSize="14sp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnExportCurrentPdf"
+                            style="@style/AppButton.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="@dimen/spacing_small"
+                            android:text="📄 PDF"
+                            android:textSize="14sp"/>
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnExportAllCharts"
+                        style="@style/AppButton.Primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_small"
+                        android:text="📦 Export All Charts"
+                        android:textSize="14sp"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>

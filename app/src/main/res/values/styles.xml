@@ -1,0 +1,104 @@
+<resources>
+    <!-- Card Styles -->
+    <style name="AppCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">@dimen/card_radius</item>
+        <item name="cardElevation">@dimen/card_elevation</item>
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="contentPadding">@dimen/card_padding</item>
+        <item name="android:layout_margin">@dimen/spacing_medium</item>
+    </style>
+
+    <style name="AppCard.Action">
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:foreground">?attr/selectableItemBackground</item>
+    </style>
+
+    <style name="AppCard.Highlighted">
+        <item name="cardBackgroundColor">@color/primary_light</item>
+    </style>
+
+    <!-- Button Styles -->
+    <style name="AppButton" parent="Widget.Material3.Button">
+        <item name="android:minHeight">@dimen/button_height</item>
+        <item name="cornerRadius">@dimen/button_radius</item>
+        <item name="elevation">@dimen/button_elevation</item>
+    </style>
+
+    <style name="AppButton.Primary">
+        <item name="backgroundTint">@color/primary</item>
+        <item name="android:textColor">@color/text_on_primary</item>
+    </style>
+
+    <style name="AppButton.Secondary">
+        <item name="backgroundTint">@color/accent</item>
+        <item name="android:textColor">@color/text_on_primary</item>
+    </style>
+
+    <style name="AppButton.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:minHeight">@dimen/button_height</item>
+        <item name="strokeColor">@color/primary</item>
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
+    <!-- Text Styles -->
+    <style name="TextDisplay">
+        <item name="android:textSize">@dimen/text_display</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextHeadline">
+        <item name="android:textSize">@dimen/text_headline</item>
+        <item name="android:textColor">@color/primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextTitle">
+        <item name="android:textSize">@dimen/text_title</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextBody">
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="TextSecondary">
+        <item name="android:textSize">@dimen/text_label</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Floating Toolbar -->
+    <style name="FloatingToolbar">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">bottom|center_horizontal</item>
+        <item name="android:layout_margin">@dimen/spacing_medium</item>
+        <item name="android:background">@drawable/toolbar_background</item>
+        <item name="android:elevation">8dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:padding">@dimen/spacing_small</item>
+    </style>
+
+    <!-- Measurement Button -->
+    <style name="MeasurementButton" parent="AppButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Status Card -->
+    <style name="StatusCard">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_margin">@dimen/spacing_medium</item>
+        <item name="cardCornerRadius">8dp</item>
+        <item name="cardElevation">6dp</item>
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="contentPadding">12dp</item>
+    </style>
+</resources>
