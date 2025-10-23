@@ -13,6 +13,19 @@ import org.opencv.android.OpenCVLoader
 import org.opencv.aruco.Aruco
 import org.opencv.core.Core
 
+/**
+ * MainActivity - Home screen of ArborTag application
+ *
+ * Features:
+ * - OpenCV and ArUco initialization
+ * - Navigation to main features
+ * - System health checks
+ *
+ * Main Features:
+ * 1. New Location/Project - Start tree tagging
+ * 2. Data Curation - Export and manage data
+ * 3. Data Analysis - Generate insights and visualizations
+ */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -29,6 +42,10 @@ class MainActivity : AppCompatActivity() {
         setupClickListeners()
     }
 
+    /**
+     * Initialize OpenCV and test ArUco module availability
+     * This is critical for tree measurement functionality
+     */
     private fun initializeAndTestOpenCV() {
         Log.d(TAG, "========================================")
         Log.d(TAG, "Starting OpenCV Initialization")
@@ -112,7 +129,6 @@ class MainActivity : AppCompatActivity() {
             .setMessage(message)
             .setPositiveButton("OK") { _, _ -> }
             .setNeutralButton("View Logs") { _, _ ->
-                // Optionally: open log viewer or settings
                 Toast.makeText(this, "Check Logcat for details", Toast.LENGTH_SHORT).show()
             }
             .setIcon(android.R.drawable.ic_dialog_alert)

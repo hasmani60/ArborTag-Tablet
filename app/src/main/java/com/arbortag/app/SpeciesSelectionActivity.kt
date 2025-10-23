@@ -21,6 +21,21 @@ import com.arbortag.app.databinding.ActivitySpeciesSelectionBinding
 import com.arbortag.app.utils.PermissionHelper
 import kotlinx.coroutines.launch
 
+/**
+ * SpeciesSelectionActivity - Select tree species and finalize tree data
+ *
+ * Features:
+ * - Display measurements from previous activity
+ * - Species selection from database
+ * - GPS location acquisition with timeout
+ * - Carbon sequestration calculation
+ * - Tree data validation and saving
+ *
+ * FIXED ISSUES:
+ * - Measurements now displayed immediately
+ * - Enhanced GPS feedback
+ * - Better error handling
+ */
 class SpeciesSelectionActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySpeciesSelectionBinding
@@ -56,12 +71,31 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         width = intent.getDoubleExtra("width", 0.0)
         canopy = intent.getDoubleExtra("canopy", -1.0).takeIf { it != -1.0 }
 
+        // ✅ FIXED: Display measurements immediately
+        displayMeasurements()
+
         setupLocationRequest()
         loadSpecies()
         setupClickListeners()
 
         // Start GPS acquisition
         startGPSAcquisition()
+    }
+
+    /**
+     * ✅ ADDED: Display measurements from intent
+     */
+    private fun displayMeasurements() {
+        binding.tvMeasuredHeight.text = String.format("%.2f m", height)
+        binding.tvMeasuredWidth.text = String.format("%.2f m", width)
+
+        canopy?.let {
+            binding.tvMeasuredCanopy.text = String.format("%.2f m", it)
+            binding.tvMeasuredCanopy.setTextColor(getColor(R.color.primary))
+        } ?: run {
+            binding.tvMeasuredCanopy.text = "Not measured"
+            binding.tvMeasuredCanopy.setTextColor(getColor(R.color.secondary_text))
+        }
     }
 
     private fun setupLocationRequest() {
@@ -102,6 +136,9 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * ✅ ENHANCED: Better GPS acquisition with comprehensive feedback
+     */
     @SuppressLint("MissingPermission")
     private fun startGPSAcquisition() {
         // Check permissions first
@@ -159,6 +196,9 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * ✅ ENHANCED: Better success feedback with accuracy warnings
+     */
     private fun handleLocationSuccess(location: Location, isLastKnown: Boolean) {
         isGpsAcquisitionActive = false
         currentLocation = location
@@ -173,7 +213,7 @@ class SpeciesSelectionActivity : AppCompatActivity() {
 
         binding.progressBarGps.visibility = View.GONE
         binding.tvGpsStatus.text = if (isLastKnown) {
-            "✓ GPS acquired (last known)"
+            "✓ GPS acquired (last known location)"
         } else {
             "✓ GPS acquired"
         }
@@ -194,14 +234,14 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         // Show accuracy warning if poor
         if (accuracy > 20) {
             binding.tvGpsAccuracyWarning.visibility = View.VISIBLE
-            binding.tvGpsAccuracyWarning.text = "⚠️ GPS accuracy is low. Consider moving to open area."
+            binding.tvGpsAccuracyWarning.text = "⚠️ GPS accuracy is low (${String.format("%.0f", accuracy)}m). Consider moving to open area for better accuracy."
         } else {
             binding.tvGpsAccuracyWarning.visibility = View.GONE
         }
 
         Toast.makeText(
             this,
-            "GPS location acquired successfully!",
+            "✓ GPS location acquired successfully!",
             Toast.LENGTH_SHORT
         ).show()
     }
@@ -214,7 +254,7 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         }
 
         binding.progressBarGps.visibility = View.GONE
-        binding.tvGpsStatus.text = "❌ GPS timeout"
+        binding.tvGpsStatus.text = "❌ GPS timeout (30s)"
         binding.tvGpsStatus.setTextColor(getColor(R.color.error))
         binding.btnRefreshGps.visibility = View.VISIBLE
 
@@ -230,11 +270,14 @@ class SpeciesSelectionActivity : AppCompatActivity() {
 
         Toast.makeText(
             this,
-            "GPS acquisition timed out. Please try again.",
+            "GPS acquisition timed out. Please try again or move to an area with better signal.",
             Toast.LENGTH_LONG
         ).show()
     }
 
+    /**
+     * Update carbon sequestration calculation based on selected species
+     */
     private fun updateCarbonCalculation() {
         val species = selectedSpecies ?: return
 
@@ -250,7 +293,7 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         }
 
         binding.btnDiscard.setOnClickListener {
-            finish()
+            showDiscardConfirmation()
         }
 
         binding.btnRefreshGps.setOnClickListener {
@@ -262,20 +305,33 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * ✅ ENHANCED: Better validation and feedback
+     */
     private fun showReviewDialog() {
         if (selectedSpecies == null) {
-            Toast.makeText(this, "Please select a species", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "⚠️ Please select a tree species", Toast.LENGTH_SHORT).show()
             return
         }
 
         if (currentLocation == null) {
             AlertDialog.Builder(this)
                 .setTitle("No GPS Location")
-                .setMessage("GPS location is not available. Do you want to continue without GPS coordinates?")
+                .setMessage(
+                    "GPS location is not available.\n\n" +
+                            "Options:\n" +
+                            "• Retry GPS acquisition\n" +
+                            "• Continue without GPS (not recommended)\n\n" +
+                            "Note: Trees without GPS coordinates cannot be mapped or analyzed geographically."
+                )
                 .setPositiveButton("Retry GPS") { _, _ ->
                     startGPSAcquisition()
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Continue Without GPS") { _, _ ->
+                    // Allow saving without GPS for special cases
+                    saveTreeDataWithoutGPS()
+                }
+                .setNeutralButton("Cancel", null)
                 .show()
             return
         }
@@ -283,24 +339,51 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         val species = selectedSpecies!!
         val carbonSeq = species.carbonFactor * (height * width)
 
-        val reviewMessage = """
-            Common Name: ${species.commonName}
-            Scientific Name: ${species.scientificName}
-            Height: ${String.format("%.2f", height)} m
-            Width: ${String.format("%.2f", width)} m
-            ${canopy?.let { "Canopy: ${String.format("%.2f", it)} m\n" } ?: ""}
-            Coordinates: ${String.format("%.6f", currentLocation!!.latitude)}, ${String.format("%.6f", currentLocation!!.longitude)}
-            GPS Accuracy: ± ${String.format("%.0f", currentLocation!!.accuracy)} m
-            Carbon Sequestration: ${String.format("%.2f", carbonSeq)} kg CO₂/year
-        """.trimIndent()
+        val reviewMessage = buildString {
+            append("🌳 TREE INFORMATION\n")
+            append("━━━━━━━━━━━━━━━━━━━━━━━━\n\n")
+            append("Species:\n")
+            append("  • Common: ${species.commonName}\n")
+            append("  • Scientific: ${species.scientificName}\n\n")
+            append("Measurements:\n")
+            append("  • Height: ${String.format("%.2f", height)} m\n")
+            append("  • Width: ${String.format("%.2f", width)} m\n")
+            canopy?.let { append("  • Canopy: ${String.format("%.2f", it)} m\n") }
+            append("\n")
+            append("Location:\n")
+            append("  • Lat: ${String.format("%.6f", currentLocation!!.latitude)}\n")
+            append("  • Long: ${String.format("%.6f", currentLocation!!.longitude)}\n")
+            append("  • Accuracy: ± ${String.format("%.0f", currentLocation!!.accuracy)} m\n\n")
+            append("Carbon Sequestration:\n")
+            append("  • ${String.format("%.2f", carbonSeq)} kg CO₂/year\n")
+        }
 
         AlertDialog.Builder(this)
             .setTitle("Review Tree Data")
             .setMessage(reviewMessage)
-            .setPositiveButton("Save") { _, _ ->
+            .setPositiveButton("✓ Save") { _, _ ->
                 saveTreeData()
             }
-            .setNegativeButton("Edit", null)
+            .setNegativeButton("✎ Edit", null)
+            .show()
+    }
+
+    /**
+     * ✅ ADDED: Confirmation dialog for discarding
+     */
+    private fun showDiscardConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("Discard Tree Data?")
+            .setMessage(
+                "Are you sure you want to discard this tree?\n\n" +
+                        "All measurements and data will be lost."
+            )
+            .setPositiveButton("Yes, Discard") { _, _ ->
+                Toast.makeText(this, "Tree data discarded", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+            .setNegativeButton("Cancel", null)
+            .setIcon(android.R.drawable.ic_dialog_alert)
             .show()
     }
 
@@ -324,22 +407,72 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         )
 
         lifecycleScope.launch {
-            database.treeDao().insert(tree)
+            try {
+                database.treeDao().insert(tree)
 
-            Toast.makeText(
-                this@SpeciesSelectionActivity,
-                "Tree data saved successfully",
-                Toast.LENGTH_SHORT
-            ).show()
+                Toast.makeText(
+                    this@SpeciesSelectionActivity,
+                    "✓ Tree data saved successfully",
+                    Toast.LENGTH_SHORT
+                ).show()
 
-            showContinueDialog()
+                showContinueDialog()
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@SpeciesSelectionActivity,
+                    "Error saving tree: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    /**
+     * ✅ ADDED: Save without GPS for special cases
+     */
+    private fun saveTreeDataWithoutGPS() {
+        val species = selectedSpecies ?: return
+
+        val carbonSeq = species.carbonFactor * (height * width)
+
+        val tree = Tree(
+            projectId = projectId,
+            scientificName = species.scientificName,
+            commonName = species.commonName,
+            height = height,
+            width = width,
+            canopy = canopy,
+            latitude = 0.0,  // No GPS
+            longitude = 0.0,  // No GPS
+            carbonSequestration = carbonSeq,
+            imagePath = imagePath
+        )
+
+        lifecycleScope.launch {
+            try {
+                database.treeDao().insert(tree)
+
+                Toast.makeText(
+                    this@SpeciesSelectionActivity,
+                    "⚠️ Tree saved without GPS coordinates",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                showContinueDialog()
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@SpeciesSelectionActivity,
+                    "Error saving tree: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
     private fun showContinueDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Tree Tagged Successfully ✓")
-            .setMessage("Do you want to continue tagging more trees?")
+            .setTitle("✓ Tree Tagged Successfully")
+            .setMessage("Do you want to continue tagging more trees in this project?")
             .setPositiveButton("Continue") { _, _ ->
                 val intent = Intent(this, TreeTaggingActivity::class.java)
                 intent.putExtra("project_id", projectId)

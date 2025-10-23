@@ -1,41 +1,104 @@
 <resources>
-    <!-- Primary Palette - Forest Theme -->
+    <!-- ==================== Primary Palette - Forest Theme ==================== -->
     <color name="primary">#2E7D32</color>
     <color name="primary_dark">#1B5E20</color>
     <color name="primary_light">#A5D6A7</color>
     <color name="primary_variant">#388E3C</color>
 
-    <!-- Accent Colors -->
+    <!-- Additional Primary Shades -->
+    <color name="primary_50">#E8F5E9</color>
+    <color name="primary_100">#C8E6C9</color>
+    <color name="primary_200">#A5D6A7</color>
+    <color name="primary_300">#81C784</color>
+    <color name="primary_400">#66BB6A</color>
+    <color name="primary_500">#4CAF50</color>
+    <color name="primary_600">#43A047</color>
+    <color name="primary_700">#388E3C</color>
+    <color name="primary_800">#2E7D32</color>
+    <color name="primary_900">#1B5E20</color>
+
+    <!-- ==================== Accent Colors ==================== -->
     <color name="accent">#FF6F00</color>
     <color name="accent_light">#FFA726</color>
+    <color name="accent_dark">#E65100</color>
 
-    <!-- Semantic Colors -->
+    <!-- ==================== Semantic Colors ==================== -->
     <color name="success">#4CAF50</color>
     <color name="success_light">#81C784</color>
+    <color name="success_dark">#388E3C</color>
+
     <color name="warning">#FFC107</color>
     <color name="warning_light">#FFD54F</color>
+    <color name="warning_dark">#FFA000</color>
+
     <color name="error">#F44336</color>
     <color name="error_light">#E57373</color>
-    <color name="info">#2196F3</color>
+    <color name="error_dark">#D32F2F</color>
 
-    <!-- Neutrals -->
+    <color name="info">#2196F3</color>
+    <color name="info_light">#64B5F6</color>
+    <color name="info_dark">#1976D2</color>
+
+    <!-- ==================== Neutrals & Backgrounds ==================== -->
     <color name="background_primary">#FAFAFA</color>
     <color name="background_secondary">#F5F5F5</color>
-    <color name="background_light">#FAFAFA</color> <!-- Added: matches background_primary -->
+    <color name="background_light">#FAFAFA</color>
+    <color name="background_dark">#F5F5F5</color>
+
     <color name="surface">#FFFFFF</color>
     <color name="surface_elevated">#FFFFFF</color>
-    <color name="card_background">#FFFFFF</color> <!-- Added: for card backgrounds -->
+    <color name="surface_variant">#F5F5F5</color>
+    <color name="card_background">#FFFFFF</color>
 
-    <!-- Text Colors -->
+    <!-- ==================== Text Colors ==================== -->
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>
     <color name="text_hint">#BDBDBD</color>
     <color name="text_disabled">#9E9E9E</color>
     <color name="text_on_primary">#FFFFFF</color>
-    <color name="primary_text">#212121</color> <!-- Added: matches text_primary -->
-    <color name="secondary_text">#757575</color> <!-- Added: matches text_secondary -->
+    <color name="text_on_accent">#FFFFFF</color>
+    <color name="text_on_surface">#212121</color>
 
-    <!-- Dividers & Borders -->
+    <!-- Legacy compatibility -->
+    <color name="primary_text">#212121</color>
+    <color name="secondary_text">#757575</color>
+
+    <!-- ==================== Dividers & Borders ==================== -->
     <color name="divider">#E0E0E0</color>
     <color name="border">#BDBDBD</color>
+    <color name="border_light">#EEEEEE</color>
+    <color name="border_dark">#9E9E9E</color>
+
+    <!-- ==================== Overlay Colors ==================== -->
+    <color name="overlay_light">#80FFFFFF</color>
+    <color name="overlay_dark">#80000000</color>
+    <color name="scrim">#80000000</color>
+
+    <!-- ==================== State Colors ==================== -->
+    <color name="state_active">#4CAF50</color>
+    <color name="state_inactive">#9E9E9E</color>
+    <color name="state_pressed">#388E3C</color>
+    <color name="state_focused">#2E7D32</color>
+
+    <!-- ==================== Special Purpose Colors ==================== -->
+    <color name="carbon_positive">#4CAF50</color>
+    <color name="carbon_neutral">#FFC107</color>
+    <color name="carbon_negative">#F44336</color>
+
+    <color name="measurement_height">#4CAF50</color>
+    <color name="measurement_width">#2196F3</color>
+    <color name="measurement_canopy">#FF6F00</color>
+
+    <!-- ==================== Gradient Colors ==================== -->
+    <color name="gradient_start">#1B5E20</color>
+    <color name="gradient_end">#4CAF50</color>
+
+    <!-- ==================== Chart Colors ==================== -->
+    <color name="chart_color_1">#4CAF50</color>
+    <color name="chart_color_2">#2196F3</color>
+    <color name="chart_color_3">#FF6F00</color>
+    <color name="chart_color_4">#9C27B0</color>
+    <color name="chart_color_5">#F44336</color>
+    <color name="chart_color_6">#FFC107</color>
+
 </resources>

@@ -1,5 +1,5 @@
 <resources>
-    <!-- Card Styles -->
+    <!-- ==================== Card Styles ==================== -->
     <style name="AppCard" parent="Widget.Material3.CardView.Elevated">
         <item name="cardCornerRadius">@dimen/card_radius</item>
         <item name="cardElevation">@dimen/card_elevation</item>
@@ -12,57 +12,81 @@
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
         <item name="android:foreground">?attr/selectableItemBackground</item>
+        <item name="cardElevation">4dp</item>
     </style>
 
     <style name="AppCard.Highlighted">
         <item name="cardBackgroundColor">@color/primary_light</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="strokeColor">@color/primary</item>
     </style>
 
-    <!-- Button Styles -->
+    <style name="AppCard.Featured">
+        <item name="cardElevation">8dp</item>
+        <item name="cardCornerRadius">16dp</item>
+    </style>
+
+    <!-- ==================== Button Styles ==================== -->
     <style name="AppButton" parent="Widget.Material3.Button">
         <item name="android:minHeight">@dimen/button_height</item>
         <item name="cornerRadius">@dimen/button_radius</item>
         <item name="elevation">@dimen/button_elevation</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
 
     <style name="AppButton.Primary">
         <item name="backgroundTint">@color/primary</item>
         <item name="android:textColor">@color/text_on_primary</item>
+        <item name="elevation">4dp</item>
     </style>
 
     <style name="AppButton.Secondary">
         <item name="backgroundTint">@color/accent</item>
         <item name="android:textColor">@color/text_on_primary</item>
+        <item name="elevation">4dp</item>
     </style>
 
     <style name="AppButton.Outlined" parent="Widget.Material3.Button.OutlinedButton">
         <item name="android:minHeight">@dimen/button_height</item>
         <item name="strokeColor">@color/primary</item>
+        <item name="strokeWidth">2dp</item>
         <item name="android:textColor">@color/primary</item>
+        <item name="cornerRadius">@dimen/button_radius</item>
+        <item name="android:textSize">16sp</item>
     </style>
 
-    <!-- Text Styles -->
+    <style name="AppButton.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/primary</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <!-- ==================== Text Styles ==================== -->
     <style name="TextDisplay">
         <item name="android:textSize">@dimen/text_display</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
 
     <style name="TextHeadline">
         <item name="android:textSize">@dimen/text_headline</item>
         <item name="android:textColor">@color/primary</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
 
     <style name="TextTitle">
         <item name="android:textSize">@dimen/text_title</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
 
     <style name="TextBody">
         <item name="android:textSize">@dimen/text_body</item>
         <item name="android:textColor">@color/text_primary</item>
+        <item name="android:lineSpacingExtra">2dp</item>
     </style>
 
     <style name="TextSecondary">
@@ -70,7 +94,22 @@
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 
-    <!-- Floating Toolbar -->
+    <style name="TextCaption">
+        <item name="android:textSize">@dimen/text_caption</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- ==================== Input Styles ==================== -->
+    <style name="AppTextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/primary</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="hintTextColor">@color/primary</item>
+    </style>
+
+    <!-- ==================== Floating Toolbar ==================== -->
     <style name="FloatingToolbar">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
@@ -82,7 +121,7 @@
         <item name="android:padding">@dimen/spacing_small</item>
     </style>
 
-    <!-- Measurement Button -->
+    <!-- ==================== Measurement Styles ==================== -->
     <style name="MeasurementButton" parent="AppButton">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">48dp</item>
@@ -91,14 +130,125 @@
         <item name="android:textSize">13sp</item>
     </style>
 
-    <!-- Status Card -->
+    <style name="MeasurementCard">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_margin">@dimen/spacing_medium</item>
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardElevation">6dp</item>
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="contentPadding">@dimen/spacing_medium</item>
+    </style>
+
+    <!-- ==================== Status Card ==================== -->
     <style name="StatusCard">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_margin">@dimen/spacing_medium</item>
-        <item name="cardCornerRadius">8dp</item>
+        <item name="cardCornerRadius">12dp</item>
         <item name="cardElevation">6dp</item>
         <item name="cardBackgroundColor">@color/surface</item>
-        <item name="contentPadding">12dp</item>
+        <item name="contentPadding">@dimen/spacing_medium</item>
     </style>
+
+    <!-- ==================== Stat Item Styles ==================== -->
+    <style name="StatContainer">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center</item>
+        <item name="android:padding">@dimen/spacing_small</item>
+    </style>
+
+    <style name="StatLabel">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="StatValue">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginTop">4dp</item>
+    </style>
+
+    <!-- ==================== Divider Styles ==================== -->
+    <style name="Divider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/divider</item>
+    </style>
+
+    <style name="Divider.Thick">
+        <item name="android:layout_height">2dp</item>
+    </style>
+
+    <!-- ==================== Icon Styles ==================== -->
+    <style name="IconContainer">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+
+    <style name="IconContainer.Large">
+        <item name="android:layout_width">56dp</item>
+        <item name="android:layout_height">56dp</item>
+    </style>
+
+    <!-- ==================== Empty State Styles ==================== -->
+    <style name="EmptyStateContainer">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center</item>
+        <item name="android:padding">@dimen/spacing_xlarge</item>
+    </style>
+
+    <style name="EmptyStateIcon">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">100dp</item>
+        <item name="android:alpha">0.4</item>
+    </style>
+
+    <style name="EmptyStateTitle">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:layout_marginTop">@dimen/spacing_medium</item>
+    </style>
+
+    <style name="EmptyStateMessage">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textAlignment">center</item>
+        <item name="android:layout_marginTop">@dimen/spacing_small</item>
+    </style>
+
+    <!-- ==================== Info Banner Styles ==================== -->
+    <style name="InfoBanner">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:padding">@dimen/spacing_medium</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="InfoBanner.Success">
+        <item name="android:background">#E8F5E9</item>
+    </style>
+
+    <style name="InfoBanner.Warning">
+        <item name="android:background">#FFF3E0</item>
+    </style>
+
+    <style name="InfoBanner.Info">
+        <item name="android:background">#E3F2FD</item>
+    </style>
+
+    <style name="InfoBanner.Error">
+        <item name="android:background">#FFEBEE</item>
+    </style>
+
 </resources>

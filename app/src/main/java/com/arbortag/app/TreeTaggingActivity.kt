@@ -23,6 +23,22 @@ import org.opencv.aruco.Aruco
 import org.opencv.core.Core
 import java.io.File
 
+/**
+ * TreeTaggingActivity - Main activity for capturing and measuring trees
+ *
+ * Features:
+ * - Camera capture with CameraX
+ * - ArUco marker detection and calibration
+ * - Interactive measurement (height, width, canopy)
+ * - Zoomable image view with pinch-to-zoom
+ * - Visual feedback and undo functionality
+ *
+ * FIXED ISSUES:
+ * - View binding using direct references
+ * - Memory leak prevention
+ * - Resource cleanup
+ * - Enhanced user feedback
+ */
 class TreeTaggingActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTreeTaggingBinding
@@ -54,7 +70,7 @@ class TreeTaggingActivity : AppCompatActivity() {
 
         projectId = intent.getLongExtra("project_id", -1)
 
-        // TEST OpenCV & ArUco before proceeding
+        // Test OpenCV & ArUco before proceeding
         testOpenCVAndArUco()
 
         // Initialize ArUco helper with marker SIZE (side length) from settings
@@ -152,15 +168,32 @@ class TreeTaggingActivity : AppCompatActivity() {
             detectMarker()
         }
 
+        // ✅ FIXED: Added undo button handler
+        binding.btnUndo.setOnClickListener {
+            if (measurementPoints.isNotEmpty()) {
+                measurementPoints.removeLast()
+
+                // Redraw image without last point
+                capturedBitmap?.let { original ->
+                    val mutableBitmap = original.copy(Bitmap.Config.ARGB_8888, true)
+                    binding.ivMeasurementImage.setImageBitmap(mutableBitmap)
+                }
+
+                Toast.makeText(this, "↩ Last point removed", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "No points to undo", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         setupImageViewTouchListener()
     }
 
+    /**
+     * ✅ FIXED: Using direct binding reference instead of findViewById
+     */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupImageViewTouchListener() {
-        // FIXED: Use the correct ID from layout: ivMeasurementImage (not ivCapturedImage)
-        val imageView = binding.root.findViewById<com.arbortag.app.views.ZoomableImageView>(R.id.ivMeasurementImage)
-
-        imageView?.setOnTouchListener { _, event ->
+        binding.ivMeasurementImage.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN &&
                 currentMeasurementMode != MeasurementMode.NONE) {
 
@@ -194,6 +227,9 @@ class TreeTaggingActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * ✅ ENHANCED: Added visual feedback
+     */
     private fun startMeasurement(mode: MeasurementMode) {
         if (arucoHelper?.isCalibrated() != true) {
             Toast.makeText(
@@ -207,11 +243,11 @@ class TreeTaggingActivity : AppCompatActivity() {
         currentMeasurementMode = mode
         measurementPoints.clear()
 
-        val instruction = when (mode) {
-            MeasurementMode.HEIGHT -> "Tap top and bottom of tree"
-            MeasurementMode.WIDTH -> "Tap left and right edges of trunk"
-            MeasurementMode.CANOPY -> "Tap two edges of canopy"
-            else -> ""
+        val (instruction, emoji) = when (mode) {
+            MeasurementMode.HEIGHT -> "Tap top and bottom of tree" to "📏"
+            MeasurementMode.WIDTH -> "Tap left and right edges of trunk" to "📐"
+            MeasurementMode.CANOPY -> "Tap two edges of canopy" to "🌳"
+            else -> "" to ""
         }
 
         Toast.makeText(this, "📍 $instruction", Toast.LENGTH_LONG).show()
@@ -232,17 +268,23 @@ class TreeTaggingActivity : AppCompatActivity() {
 
             // Update the displayed image
             capturedBitmap = mutableBitmap
-            // FIXED: Use correct ID: ivMeasurementImage
-            val imageView = binding.root.findViewById<com.arbortag.app.views.ZoomableImageView>(R.id.ivMeasurementImage)
-            imageView?.setImageBitmap(mutableBitmap)
+            binding.ivMeasurementImage.setImageBitmap(mutableBitmap)
         }
     }
 
+    /**
+     * ✅ ENHANCED: Added null safety checks
+     */
     private fun calculateMeasurement() {
         if (measurementPoints.size != 2) return
 
+        // Add null safety check
+        if (arucoHelper == null) {
+            Toast.makeText(this, "Measurement system not initialized", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         try {
-            // FIXED: Use the calculateDistance method from ArUcoMeasurementHelper
             val realDistance = arucoHelper?.calculateDistance(
                 measurementPoints[0],
                 measurementPoints[1]
@@ -293,11 +335,12 @@ class TreeTaggingActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * ✅ FIXED: Using direct binding references
+     */
     private fun detectMarker() {
         capturedBitmap?.let { bitmap ->
-            // FIXED: Use correct ID: progressAruco (not progressBar)
-            val progressBar = binding.root.findViewById<View>(R.id.progressAruco)
-            progressBar?.visibility = View.VISIBLE
+            binding.progressAruco.visibility = View.VISIBLE
 
             binding.tvMarkerStatus.text = "⌛ Detecting marker..."
             binding.tvMarkerStatus.setTextColor(getColor(R.color.warning))
@@ -307,7 +350,7 @@ class TreeTaggingActivity : AppCompatActivity() {
                 val detected = arucoHelper?.detectMarkerAndCalculateRatio(bitmap) ?: false
 
                 runOnUiThread {
-                    progressBar?.visibility = View.GONE
+                    binding.progressAruco.visibility = View.GONE
 
                     if (detected) {
                         binding.tvMarkerStatus.text = "✓ Marker Detected"
@@ -318,9 +361,7 @@ class TreeTaggingActivity : AppCompatActivity() {
                         )
                         binding.tvPixelRatio.visibility = View.VISIBLE
 
-                        // FIXED: Use correct ID: measurementToolbar (not layoutMeasurementButtons)
-                        val measurementButtons = binding.root.findViewById<View>(R.id.measurementToolbar)
-                        measurementButtons?.visibility = View.VISIBLE
+                        binding.measurementToolbar.visibility = View.VISIBLE
 
                         Toast.makeText(
                             this,
@@ -332,9 +373,7 @@ class TreeTaggingActivity : AppCompatActivity() {
                         binding.tvMarkerStatus.setTextColor(getColor(R.color.error))
                         binding.tvPixelRatio.visibility = View.GONE
 
-                        // FIXED: Use correct ID: measurementToolbar
-                        val measurementButtons = binding.root.findViewById<View>(R.id.measurementToolbar)
-                        measurementButtons?.visibility = View.GONE
+                        binding.measurementToolbar.visibility = View.GONE
 
                         showMarkerNotFoundDialog()
                     }
@@ -387,7 +426,7 @@ class TreeTaggingActivity : AppCompatActivity() {
                     it.setSurfaceProvider(binding.previewView.surfaceProvider)
                 }
 
-            // IMPROVED: Better image capture settings
+            // ✅ IMPROVED: Better image capture settings
             imageCapture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                 .setTargetResolution(android.util.Size(1920, 1080))
@@ -414,8 +453,15 @@ class TreeTaggingActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    /**
+     * ✅ ENHANCED: Added loading state
+     */
     private fun captureImage() {
         val imageCapture = imageCapture ?: return
+
+        // Show loading state
+        binding.btnCapture.isEnabled = false
+        binding.btnCapture.text = "⏳"
 
         val photoFile = File(
             externalMediaDirs.firstOrNull(),
@@ -448,6 +494,10 @@ class TreeTaggingActivity : AppCompatActivity() {
                 }
 
                 override fun onError(exception: ImageCaptureException) {
+                    // Reset button state on error
+                    binding.btnCapture.isEnabled = true
+                    binding.btnCapture.text = "📷"
+
                     Log.e(TAG, "Image capture failed: ${exception.message}", exception)
                     Toast.makeText(
                         this@TreeTaggingActivity,
@@ -459,12 +509,34 @@ class TreeTaggingActivity : AppCompatActivity() {
         )
     }
 
+    /**
+     * ✅ FIXED: Using direct binding reference + memory optimization
+     */
     private fun displayCapturedImage(imageFile: File) {
-        capturedBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
-        // FIXED: Use correct ID: ivMeasurementImage
-        val imageView = binding.root.findViewById<com.arbortag.app.views.ZoomableImageView>(R.id.ivMeasurementImage)
-        imageView?.setImageBitmap(capturedBitmap)
-        Log.d(TAG, "Image loaded: ${capturedBitmap?.width}x${capturedBitmap?.height}")
+        // Recycle old bitmap to prevent memory leaks
+        capturedBitmap?.recycle()
+
+        // Load with scaling to prevent OOM
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(imageFile.absolutePath, options)
+
+        // Calculate scaling factor
+        val maxSize = 2048
+        val scale = Math.max(
+            options.outWidth / maxSize,
+            options.outHeight / maxSize
+        ).coerceAtLeast(1)
+
+        // Load scaled bitmap
+        options.inJustDecodeBounds = false
+        options.inSampleSize = scale
+
+        capturedBitmap = BitmapFactory.decodeFile(imageFile.absolutePath, options)
+        binding.ivMeasurementImage.setImageBitmap(capturedBitmap)
+
+        Log.d(TAG, "Image loaded: ${capturedBitmap?.width}x${capturedBitmap?.height} (scale: $scale)")
     }
 
     private fun proceedToSpeciesSelection() {
@@ -489,5 +561,28 @@ class TreeTaggingActivity : AppCompatActivity() {
 
         startActivity(intent)
         finish()
+    }
+
+    /**
+     * ✅ ADDED: Resource cleanup to prevent memory leaks
+     */
+    override fun onDestroy() {
+        super.onDestroy()
+
+        // Release camera resources
+        try {
+            val cameraProvider = ProcessCameraProvider.getInstance(this).get()
+            cameraProvider.unbindAll()
+            Log.d(TAG, "Camera resources released")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error unbinding camera: ${e.message}")
+        }
+
+        // Release bitmaps to prevent memory leaks
+        capturedBitmap?.recycle()
+        capturedBitmap = null
+
+        // Clear ArUco helper
+        arucoHelper = null
     }
 }

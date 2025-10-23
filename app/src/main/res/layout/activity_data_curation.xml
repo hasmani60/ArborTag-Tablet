@@ -3,59 +3,120 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
-        <!-- Add data variables here if needed in the future -->
+        <!-- Data variables for future data binding -->
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/background_light">
+        android:background="@color/background_primary"
+        android:padding="@dimen/spacing_medium">
+
+        <!-- Header Section -->
+        <LinearLayout
+            android:id="@+id/headerLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="@dimen/spacing_medium"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_database"
+                android:contentDescription="Database"
+                app:tint="@color/primary"/>
+
+            <TextView
+                android:id="@+id/tvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_small"
+                android:text="Data Curation"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"/>
+
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/tvTitle"
+            android:id="@+id/tvSubtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Data Curation"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@color/primary_text"
-            android:layout_margin="16dp"
-            app:layout_constraintTop_toTopOf="parent"
+            android:text="Manage and export your tree data"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="@dimen/spacing_tiny"
+            app:layout_constraintTop_toBottomOf="@id/headerLayout"
             app:layout_constraintStart_toStartOf="parent"/>
 
+        <!-- Projects RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvProjects"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginTop="16dp"
-            app:layout_constraintTop_toBottomOf="@id/tvTitle"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginTop="@dimen/spacing_medium"
+            android:clipToPadding="false"
+            android:paddingBottom="@dimen/spacing_medium"
+            app:layout_constraintTop_toBottomOf="@id/tvSubtitle"
+            app:layout_constraintBottom_toTopOf="@id/layoutProjectDetails"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"/>
 
-        <TextView
+        <!-- No Data Message -->
+        <LinearLayout
             android:id="@+id/tvNoData"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No projects with data yet.\nTag some trees to get started!"
-            android:textAlignment="center"
-            android:textSize="16sp"
-            android:textColor="@color/secondary_text"
+            android:orientation="vertical"
+            android:gravity="center"
             android:visibility="gone"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="@id/rvProjects"
+            app:layout_constraintBottom_toBottomOf="@id/rvProjects"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/ic_database"
+                android:contentDescription="No data"
+                app:tint="@color/text_hint"
+                android:alpha="0.5"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_medium"
+                android:text="No projects with data yet"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_secondary"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_small"
+                android:text="Tag some trees to get started!"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:textAlignment="center"/>
+
+        </LinearLayout>
 
         <!-- Project Details Card (Initially Hidden) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/layoutProjectDetails"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="16dp"
             android:visibility="gone"
-            app:cardElevation="4dp"
-            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            app:cardCornerRadius="16dp"
+            app:cardBackgroundColor="@color/surface"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
@@ -64,78 +125,206 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/spacing_large">
 
-                <TextView
-                    android:id="@+id/tvProjectName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Project Name"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary_text"/>
-
+                <!-- Project Header -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="12dp">
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_medium">
 
                     <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@color/primary_light"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_tree"
+                            android:contentDescription="Project"
+                            app:tint="@color/primary"/>
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvProjectName"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_marginStart="@dimen/spacing_medium"
+                        android:text="Project Name"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary"/>
 
-                        <TextView
-                            android:id="@+id/tvTreeCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Trees: 0"
-                            android:textSize="14sp"
-                            android:textColor="@color/primary_text"/>
-
-                        <TextView
-                            android:id="@+id/tvAvgHeight"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Avg Height: 0 m"
-                            android:textSize="14sp"
-                            android:textColor="@color/secondary_text"
-                            android:layout_marginTop="4dp"/>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvAvgWidth"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Avg Width: 0 m"
-                            android:textSize="14sp"
-                            android:textColor="@color/secondary_text"/>
-
-                        <TextView
-                            android:id="@+id/tvTotalCarbon"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Carbon: 0 kg"
-                            android:textSize="14sp"
-                            android:textColor="@color/success"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp"/>
-                    </LinearLayout>
                 </LinearLayout>
 
+                <!-- Statistics Grid -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="16dp">
+                    android:orientation="vertical"
+                    android:background="#F5F5F5"
+                    android:padding="@dimen/spacing_medium"
+                    android:layout_marginBottom="@dimen/spacing_medium">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:baselineAligned="false">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="@dimen/spacing_small"
+                            android:background="#E8F5E9"
+                            android:layout_marginEnd="@dimen/spacing_small">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:src="@drawable/ic_tree"
+                                android:contentDescription="Trees"
+                                app:tint="@color/success"/>
+
+                            <TextView
+                                android:id="@+id/tvTreeCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="0"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/success"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Trees"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"/>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="@dimen/spacing_small"
+                            android:background="#E3F2FD"
+                            android:layout_marginStart="@dimen/spacing_small">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:src="@android:drawable/ic_dialog_info"
+                                android:contentDescription="Carbon"
+                                app:tint="@color/info"/>
+
+                            <TextView
+                                android:id="@+id/tvTotalCarbon"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="0 kg"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/info"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Carbon"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"/>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="@dimen/spacing_small">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginEnd="@dimen/spacing_medium">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Avg Height"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"/>
+
+                            <TextView
+                                android:id="@+id/tvAvgHeight"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 m"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"/>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Avg Width"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"/>
+
+                            <TextView
+                                android:id="@+id/tvAvgWidth"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 m"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"/>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Export Actions -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Export Options"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="@dimen/spacing_small"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnExportCsv"
@@ -143,7 +332,10 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="CSV"
-                        android:layout_marginEnd="4dp"
+                        android:textSize="14sp"
+                        android:layout_marginEnd="@dimen/spacing_tiny"
+                        app:icon="@android:drawable/ic_menu_save"
+                        app:iconGravity="textStart"
                         style="@style/Widget.Material3.Button.OutlinedButton"/>
 
                     <com.google.android.material.button.MaterialButton
@@ -152,8 +344,10 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Excel"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginEnd="4dp"
+                        android:textSize="14sp"
+                        android:layout_marginHorizontal="@dimen/spacing_tiny"
+                        app:icon="@android:drawable/ic_menu_save"
+                        app:iconGravity="textStart"
                         style="@style/Widget.Material3.Button.OutlinedButton"/>
 
                     <com.google.android.material.button.MaterialButton
@@ -162,7 +356,12 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Share"
-                        android:layout_marginStart="4dp"/>
+                        android:textSize="14sp"
+                        android:layout_marginStart="@dimen/spacing_tiny"
+                        app:icon="@android:drawable/ic_menu_share"
+                        app:iconGravity="textStart"
+                        style="@style/AppButton.Primary"/>
+
                 </LinearLayout>
 
             </LinearLayout>

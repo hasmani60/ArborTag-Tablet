@@ -6,17 +6,105 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- Camera Preview -->
+    <!-- Camera Preview - Full Screen -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btnCapture"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Measurement Layout (Hidden Initially) - Now with full-screen zoomable interface -->
+    <!-- Camera Overlay Controls -->
+    <LinearLayout
+        android:id="@+id/cameraOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Top Info Banner -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardElevation="6dp"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="#E3F2FD">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_menu_camera"
+                    android:contentDescription="Camera"
+                    app:tint="@color/info"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Position ArUco marker in view for accurate measurements"
+                    android:textSize="13sp"
+                    android:textColor="@color/info"
+                    android:textStyle="bold"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+        <!-- Capture Button Container -->
+        <LinearLayout
+            android:id="@+id/captureButtonContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="24dp">
+
+            <!-- KEEP AS BUTTON - Kotlin code expects .text property -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCapture"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:text="Capture"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="60dp"
+                app:icon="@android:drawable/ic_menu_camera"
+                app:iconGravity="top"
+                app:iconSize="48dp"
+                style="@style/Widget.Material3.Button.ElevatedButton"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Tap to capture tree"
+                android:textSize="14sp"
+                android:textColor="@android:color/white"
+                android:textAlignment="center"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Measurement Layout (Full Screen) -->
     <FrameLayout
         android:id="@+id/layoutMeasurement"
         android:layout_width="0dp"
@@ -24,86 +112,115 @@
         android:visibility="gone"
         android:background="@color/background_light"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btnCapture"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Zoomable Image Container (Replaces the static ImageView) -->
-        <com.arbortag.app.views.ZoomableImageView
+        <!-- Full Screen Zoomable Image -->
+        <ImageView
             android:id="@+id/ivMeasurementImage"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:contentDescription="Captured tree image for measurement"/>
+            android:scaleType="fitCenter"
+            android:contentDescription="Captured tree image"/>
 
         <!-- Floating Measurement Toolbar -->
-        <LinearLayout
-            android:id="@+id/measurementToolbar"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/measurementToolbarCard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|center_horizontal"
             android:layout_margin="16dp"
-            android:orientation="horizontal"
-            android:background="@drawable/toolbar_background"
-            android:elevation="8dp"
-            android:padding="8dp">
+            app:cardElevation="8dp"
+            app:cardCornerRadius="16dp"
+            app:cardBackgroundColor="@color/surface">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMeasureHeight"
+            <LinearLayout
+                android:id="@+id/measurementToolbar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📏 Height"
-                android:layout_marginEnd="4dp"
-                style="@style/Widget.Material3.Button"/>
+                android:orientation="horizontal"
+                android:padding="8dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMeasureWidth"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="📐 Width"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
-                style="@style/Widget.Material3.Button"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMeasureHeight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Height"
+                    android:textSize="13sp"
+                    android:layout_marginEnd="4dp"
+                    android:paddingHorizontal="16dp"
+                    style="@style/Widget.Material3.Button"/>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMeasureCanopy"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🌳 Canopy"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
-                style="@style/Widget.Material3.Button.OutlinedButton"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMeasureWidth"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Width"
+                    android:textSize="13sp"
+                    android:layout_marginHorizontal="4dp"
+                    android:paddingHorizontal="16dp"
+                    style="@style/Widget.Material3.Button"/>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnUndo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="↩"
-                android:layout_marginStart="4dp"
-                style="@style/Widget.Material3.Button.OutlinedButton"/>
-        </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMeasureCanopy"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Canopy"
+                    android:textSize="13sp"
+                    android:layout_marginHorizontal="4dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnUndo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Undo"
+                    android:textSize="13sp"
+                    android:layout_marginStart="4dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Measurement Status Display -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/statusCard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="80dp"
-            app:cardElevation="4dp"
-            app:cardCornerRadius="8dp"
+            android:layout_gravity="center"
+            app:cardElevation="6dp"
+            app:cardCornerRadius="12dp"
             app:cardBackgroundColor="@color/surface">
 
-            <TextView
-                android:id="@+id/tvMeasurementStatus"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tap two points to measure"
-                android:padding="12dp"
-                android:textSize="14sp"
-                android:textColor="@color/primary_text"/>
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_dialog_info"
+                    android:contentDescription="Info"
+                    app:tint="@color/primary"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvMeasurementStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tap two points to measure"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold"/>
+
+            </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ArUco Status Overlay -->
+        <!-- ArUco Status Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/arucoStatusCard"
             android:layout_width="wrap_content"
@@ -111,177 +228,220 @@
             android:layout_gravity="top|end"
             android:layout_margin="16dp"
             android:layout_marginTop="80dp"
-            app:cardElevation="4dp"
-            app:cardCornerRadius="8dp"
+            app:cardElevation="6dp"
+            app:cardCornerRadius="12dp"
             app:cardBackgroundColor="#E3F2FD">
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical">
-
-                <ProgressBar
-                    android:id="@+id/progressAruco"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="8dp"
-                    android:visibility="gone"/>
+                android:orientation="vertical"
+                android:padding="16dp">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ProgressBar
+                        android:id="@+id/progressAruco"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="8dp"
+                        android:visibility="gone"/>
 
                     <TextView
                         android:id="@+id/tvMarkerStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="⌛ Detecting Marker..."
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/primary_text"/>
-
-                    <TextView
-                        android:id="@+id/tvPixelRatio"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ratio: -- px/m"
+                        android:text="Detecting..."
                         android:textSize="12sp"
-                        android:textColor="@color/secondary_text"
-                        android:layout_marginTop="2dp"
-                        android:visibility="gone"/>
+                        android:textStyle="bold"
+                        android:textColor="@color/info"/>
+
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvPixelRatio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ratio: -- px/m"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_secondary"
+                    android:fontFamily="monospace"
+                    android:layout_marginTop="4dp"
+                    android:visibility="gone"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRecalibrate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🔄"
-                    android:layout_marginStart="8dp"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    app:iconPadding="0dp"/>
+                    android:text="Recalibrate"
+                    android:textSize="12sp"
+                    android:layout_marginTop="8dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"/>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Measurement Results Panel (Collapsible) -->
+        <!-- Measurement Results Panel -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/measurementResultsCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:layout_marginBottom="16dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            app:cardElevation="6dp"
-            app:cardCornerRadius="12dp"
+            android:layout_marginHorizontal="16dp"
+            app:cardElevation="8dp"
+            app:cardCornerRadius="16dp"
+            app:cardBackgroundColor="@color/surface"
             android:visibility="visible">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📊 Measurements"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary_text"/>
+                android:padding="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_menu_info_details"
+                        android:contentDescription="Measurements"
+                        app:tint="@color/primary"
+                        android:layout_marginEnd="8dp"/>
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Height:"
-                        android:textColor="@color/secondary_text"/>
-
-                    <TextView
-                        android:id="@+id/tvHeightValue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Not measured"
+                        android:text="Measurements"
+                        android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="@color/primary_text"/>
+                        android:textColor="@color/primary"/>
+
                 </LinearLayout>
 
+                <!-- Measurements Grid -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="4dp">
+                    android:background="#F5F5F5"
+                    android:padding="8dp"
+                    android:layout_marginBottom="16dp">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Width:"
-                        android:textColor="@color/secondary_text"/>
+                        android:orientation="vertical"
+                        android:gravity="center">
 
-                    <TextView
-                        android:id="@+id/tvWidthValue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Not measured"
-                        android:textStyle="bold"
-                        android:textColor="@color/primary_text"/>
-                </LinearLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Height"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_secondary"/>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="4dp">
+                        <TextView
+                            android:id="@+id/tvHeightValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/success"/>
 
-                    <TextView
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="@color/divider"
+                        android:layout_marginHorizontal="8dp"/>
+
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Canopy:"
-                        android:textColor="@color/secondary_text"/>
+                        android:orientation="vertical"
+                        android:gravity="center">
 
-                    <TextView
-                        android:id="@+id/tvCanopyValue"
-                        android:layout_width="wrap_content"
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Width"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_secondary"/>
+
+                        <TextView
+                            android:id="@+id/tvWidthValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/info"/>
+
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="@color/divider"
+                        android:layout_marginHorizontal="8dp"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Optional"
-                        android:textStyle="bold"
-                        android:textColor="@color/primary_text"/>
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Canopy"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_secondary"/>
+
+                        <TextView
+                            android:id="@+id/tvCanopyValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/accent"/>
+
+                    </LinearLayout>
+
                 </LinearLayout>
 
+                <!-- Next Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnNextStep"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Next: Select Species ➔"
+                    android:layout_height="56dp"
+                    android:text="Next: Select Species"
                     android:textSize="16sp"
-                    android:layout_marginTop="12dp"/>
+                    app:icon="@android:drawable/ic_media_next"
+                    app:iconGravity="end"
+                    style="@style/AppButton.Primary"/>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
     </FrameLayout>
-
-
-    <!-- Capture Button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnCapture"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:text="📷"
-        android:textSize="32sp"
-        app:cornerRadius="40dp"
-        android:layout_margin="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
