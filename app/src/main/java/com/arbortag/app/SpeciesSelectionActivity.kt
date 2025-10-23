@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.location.Location
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -11,12 +13,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import com.arbortag.app.data.ArborTagDatabase
 import com.arbortag.app.data.Species
 import com.arbortag.app.data.Tree
 import com.arbortag.app.databinding.ActivitySpeciesSelectionBinding
+import com.arbortag.app.utils.PermissionHelper
 import kotlinx.coroutines.launch
 
 class SpeciesSelectionActivity : AppCompatActivity() {
@@ -24,6 +26,8 @@ class SpeciesSelectionActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySpeciesSelectionBinding
     private lateinit var database: ArborTagDatabase
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationRequest: LocationRequest
+    private var locationCallback: LocationCallback? = null
 
     private var projectId: Long = -1
     private var imagePath: String? = null
@@ -32,6 +36,10 @@ class SpeciesSelectionActivity : AppCompatActivity() {
     private var canopy: Double? = null
     private var selectedSpecies: Species? = null
     private var currentLocation: Location? = null
+
+    private val GPS_TIMEOUT_MS = 30000L // 30 seconds
+    private var gpsTimeoutHandler: Handler? = null
+    private var isGpsAcquisitionActive = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,9 +56,19 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         width = intent.getDoubleExtra("width", 0.0)
         canopy = intent.getDoubleExtra("canopy", -1.0).takeIf { it != -1.0 }
 
+        setupLocationRequest()
         loadSpecies()
-        getCurrentLocation()
         setupClickListeners()
+
+        // Start GPS acquisition
+        startGPSAcquisition()
+    }
+
+    private fun setupLocationRequest() {
+        locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+            .setMinUpdateIntervalMillis(500)
+            .setMaxUpdates(5)
+            .build()
     }
 
     private fun loadSpecies() {
@@ -85,26 +103,136 @@ class SpeciesSelectionActivity : AppCompatActivity() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun getCurrentLocation() {
-        binding.tvGpsStatus.text = "Getting GPS location..."
-
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                currentLocation = location
-                binding.tvGpsCoordinates.text =
-                    "Lat: ${String.format("%.6f", location.latitude)}, " +
-                            "Long: ${String.format("%.6f", location.longitude)}"
-                binding.tvGpsStatus.text = "GPS acquired ✓"
-                binding.tvGpsStatus.setTextColor(getColor(R.color.success))
-            } else {
-                binding.tvGpsStatus.text = "GPS location unavailable"
-                binding.tvGpsStatus.setTextColor(getColor(R.color.error))
-                Toast.makeText(this, "Please ensure GPS is enabled", Toast.LENGTH_LONG).show()
-            }
-        }.addOnFailureListener {
-            binding.tvGpsStatus.text = "GPS error"
+    private fun startGPSAcquisition() {
+        // Check permissions first
+        if (!PermissionHelper.hasAllPermissions(this)) {
+            binding.tvGpsStatus.text = "❌ Location permission not granted"
             binding.tvGpsStatus.setTextColor(getColor(R.color.error))
+            binding.btnRefreshGps.visibility = View.VISIBLE
+            return
         }
+
+        // Check if GPS is enabled
+        if (!PermissionHelper.isGPSEnabled(this)) {
+            binding.tvGpsStatus.text = "❌ GPS is disabled"
+            binding.tvGpsStatus.setTextColor(getColor(R.color.error))
+            binding.btnRefreshGps.visibility = View.VISIBLE
+            binding.btnEnableGps.visibility = View.VISIBLE
+            return
+        }
+
+        isGpsAcquisitionActive = true
+        binding.tvGpsStatus.text = "⌛ Acquiring GPS location..."
+        binding.tvGpsStatus.setTextColor(getColor(R.color.warning))
+        binding.progressBarGps.visibility = View.VISIBLE
+        binding.btnRefreshGps.visibility = View.GONE
+        binding.btnEnableGps.visibility = View.GONE
+
+        // Try to get last known location first (quick)
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null && !isGpsAcquisitionActive) {
+                handleLocationSuccess(location, isLastKnown = true)
+            }
+        }
+
+        // Set up timeout
+        gpsTimeoutHandler = Handler(Looper.getMainLooper())
+        gpsTimeoutHandler?.postDelayed({
+            if (isGpsAcquisitionActive) {
+                handleGPSTimeout()
+            }
+        }, GPS_TIMEOUT_MS)
+
+        // Request fresh location updates
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { location ->
+                    if (isGpsAcquisitionActive) {
+                        handleLocationSuccess(location, isLastKnown = false)
+                    }
+                }
+            }
+        }
+
+        locationCallback?.let {
+            fusedLocationClient.requestLocationUpdates(locationRequest, it, Looper.getMainLooper())
+        }
+    }
+
+    private fun handleLocationSuccess(location: Location, isLastKnown: Boolean) {
+        isGpsAcquisitionActive = false
+        currentLocation = location
+
+        // Cancel timeout
+        gpsTimeoutHandler?.removeCallbacksAndMessages(null)
+
+        // Stop location updates
+        locationCallback?.let {
+            fusedLocationClient.removeLocationUpdates(it)
+        }
+
+        binding.progressBarGps.visibility = View.GONE
+        binding.tvGpsStatus.text = if (isLastKnown) {
+            "✓ GPS acquired (last known)"
+        } else {
+            "✓ GPS acquired"
+        }
+        binding.tvGpsStatus.setTextColor(getColor(R.color.success))
+
+        val accuracy = location.accuracy
+        val accuracyText = "± ${String.format("%.0f", accuracy)} m"
+
+        binding.tvGpsCoordinates.text = String.format(
+            "Lat: %.6f, Long: %.6f\nAccuracy: %s",
+            location.latitude,
+            location.longitude,
+            accuracyText
+        )
+
+        binding.tvGpsCoordinates.setTextColor(getColor(R.color.primary_text))
+
+        // Show accuracy warning if poor
+        if (accuracy > 20) {
+            binding.tvGpsAccuracyWarning.visibility = View.VISIBLE
+            binding.tvGpsAccuracyWarning.text = "⚠️ GPS accuracy is low. Consider moving to open area."
+        } else {
+            binding.tvGpsAccuracyWarning.visibility = View.GONE
+        }
+
+        Toast.makeText(
+            this,
+            "GPS location acquired successfully!",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun handleGPSTimeout() {
+        isGpsAcquisitionActive = false
+
+        locationCallback?.let {
+            fusedLocationClient.removeLocationUpdates(it)
+        }
+
+        binding.progressBarGps.visibility = View.GONE
+        binding.tvGpsStatus.text = "❌ GPS timeout"
+        binding.tvGpsStatus.setTextColor(getColor(R.color.error))
+        binding.btnRefreshGps.visibility = View.VISIBLE
+
+        // Try to use last known location if available
+        currentLocation?.let {
+            Toast.makeText(
+                this,
+                "Using last known GPS location",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        Toast.makeText(
+            this,
+            "GPS acquisition timed out. Please try again.",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     private fun updateCarbonCalculation() {
@@ -124,6 +252,14 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         binding.btnDiscard.setOnClickListener {
             finish()
         }
+
+        binding.btnRefreshGps.setOnClickListener {
+            startGPSAcquisition()
+        }
+
+        binding.btnEnableGps.setOnClickListener {
+            PermissionHelper.checkAndEnableGPS(this)
+        }
     }
 
     private fun showReviewDialog() {
@@ -133,7 +269,14 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         }
 
         if (currentLocation == null) {
-            Toast.makeText(this, "GPS location not available", Toast.LENGTH_SHORT).show()
+            AlertDialog.Builder(this)
+                .setTitle("No GPS Location")
+                .setMessage("GPS location is not available. Do you want to continue without GPS coordinates?")
+                .setPositiveButton("Retry GPS") { _, _ ->
+                    startGPSAcquisition()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
             return
         }
 
@@ -147,6 +290,7 @@ class SpeciesSelectionActivity : AppCompatActivity() {
             Width: ${String.format("%.2f", width)} m
             ${canopy?.let { "Canopy: ${String.format("%.2f", it)} m\n" } ?: ""}
             Coordinates: ${String.format("%.6f", currentLocation!!.latitude)}, ${String.format("%.6f", currentLocation!!.longitude)}
+            GPS Accuracy: ± ${String.format("%.0f", currentLocation!!.accuracy)} m
             Carbon Sequestration: ${String.format("%.2f", carbonSeq)} kg CO₂/year
         """.trimIndent()
 
@@ -194,7 +338,7 @@ class SpeciesSelectionActivity : AppCompatActivity() {
 
     private fun showContinueDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Tree Tagged Successfully")
+            .setTitle("Tree Tagged Successfully ✓")
             .setMessage("Do you want to continue tagging more trees?")
             .setPositiveButton("Continue") { _, _ ->
                 val intent = Intent(this, TreeTaggingActivity::class.java)
@@ -227,5 +371,13 @@ class SpeciesSelectionActivity : AppCompatActivity() {
         )
 
         database.speciesDao().insertAll(defaultSpecies)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        gpsTimeoutHandler?.removeCallbacksAndMessages(null)
+        locationCallback?.let {
+            fusedLocationClient.removeLocationUpdates(it)
+        }
     }
 }

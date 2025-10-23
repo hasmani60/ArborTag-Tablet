@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light">
+    android:background="@color/background_light"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,21 +13,32 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Tree Details"
-            android:textSize="24sp"
+            android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="@color/primary_text"/>
+            android:textColor="@color/primary"
+            android:layout_marginBottom="8dp"/>
 
-        <!-- Species Selection -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Review measurements and add species information"
+            android:textSize="14sp"
+            android:textColor="@color/secondary_text"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Measurements Summary Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="8dp">
+            android:layout_marginBottom="16dp"
+            app:cardElevation="4dp"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="#E8F5E9">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -37,28 +49,147 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Select Tree Species"
+                    android:text="📏 Measurements Recorded"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="@color/primary_text"/>
+                    android:textColor="@color/primary_text"
+                    android:layout_marginBottom="12dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="3">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Height"
+                            android:textSize="12sp"
+                            android:textColor="@color/secondary_text"/>
+
+                        <TextView
+                            android:id="@+id/tvMeasuredHeight"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-- m"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"/>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Width"
+                            android:textSize="12sp"
+                            android:textColor="@color/secondary_text"/>
+
+                        <TextView
+                            android:id="@+id/tvMeasuredWidth"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-- m"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"/>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Canopy"
+                            android:textSize="12sp"
+                            android:textColor="@color/secondary_text"/>
+
+                        <TextView
+                            android:id="@+id/tvMeasuredCanopy"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Optional"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/secondary_text"/>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Species Selection Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardElevation="4dp"
+            app:cardCornerRadius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🌳 Select Tree Species"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary_text"
+                    android:layout_marginBottom="12dp"/>
 
                 <Spinner
                     android:id="@+id/spinnerSpecies"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:minHeight="48dp"/>
+                    android:minHeight="56dp"
+                    android:background="@drawable/spinner_background"
+                    android:padding="12dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select the species that best matches the tagged tree"
+                    android:textSize="12sp"
+                    android:textColor="@color/secondary_text"
+                    android:layout_marginTop="8dp"/>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- GPS Information -->
+        <!-- GPS Location Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="8dp">
+            android:layout_marginBottom="16dp"
+            app:cardElevation="4dp"
+            app:cardCornerRadius="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -66,22 +197,39 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="GPS Location"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary_text"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="📍 GPS Location"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary_text"/>
+
+                    <ProgressBar
+                        android:id="@+id/progressBarGps"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:visibility="gone"
+                        android:indeterminate="true"/>
+
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvGpsStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Getting location..."
+                    android:text="⌛ Acquiring GPS location..."
                     android:textSize="14sp"
-                    android:textColor="@color/secondary_text"
-                    android:layout_marginTop="8dp"/>
+                    android:textColor="@color/warning"
+                    android:layout_marginTop="12dp"
+                    android:textStyle="bold"/>
 
                 <TextView
                     android:id="@+id/tvGpsCoordinates"
@@ -90,42 +238,93 @@
                     android:text="Lat: --, Long: --"
                     android:textSize="14sp"
                     android:textColor="@color/primary_text"
-                    android:layout_marginTop="4dp"/>
+                    android:fontFamily="monospace"
+                    android:layout_marginTop="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvGpsAccuracyWarning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="⚠️ GPS accuracy is low"
+                    android:textSize="12sp"
+                    android:textColor="@color/warning"
+                    android:layout_marginTop="8dp"
+                    android:padding="8dp"
+                    android:background="#FFF3E0"
+                    android:visibility="gone"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRefreshGps"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🔄 Retry GPS"
+                        android:visibility="gone"
+                        android:layout_marginEnd="8dp"
+                        style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEnableGps"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="⚙️ Enable GPS"
+                        android:visibility="gone"
+                        android:layout_marginStart="8dp"
+                        style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Carbon Sequestration -->
+        <!-- Carbon Sequestration Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="8dp"
+            android:layout_marginBottom="24dp"
+            app:cardElevation="6dp"
+            app:cardCornerRadius="12dp"
             app:cardBackgroundColor="@color/primary_light">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp"
+                android:gravity="center">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Estimated Carbon Sequestration"
+                    android:text="💨 Estimated Carbon Sequestration"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="@color/primary_text"/>
+                    android:textColor="@color/primary_text"
+                    android:layout_marginBottom="12dp"/>
 
                 <TextView
                     android:id="@+id/tvCarbonValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="-- kg CO₂/year"
-                    android:textSize="24sp"
+                    android:textSize="32sp"
                     android:textStyle="bold"
-                    android:textColor="@color/primary"
+                    android:textColor="@color/primary"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Calculated based on species factor and tree dimensions"
+                    android:textSize="12sp"
+                    android:textColor="@color/secondary_text"
+                    android:textAlignment="center"
                     android:layout_marginTop="8dp"/>
 
             </LinearLayout>
@@ -136,27 +335,41 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="24dp">
+            android:layout_marginBottom="16dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDiscard"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="60dp"
                 android:layout_weight="1"
-                android:text="Discard"
+                android:text="✕ Discard"
+                android:textSize="16sp"
                 android:layout_marginEnd="8dp"
                 style="@style/Widget.Material3.Button.OutlinedButton"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSave"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="60dp"
                 android:layout_weight="1"
-                android:text="Save Tree"
+                android:text="✓ Save Tree"
+                android:textSize="16sp"
                 android:layout_marginStart="8dp"/>
 
         </LinearLayout>
 
+        <!-- Help Text -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tip: Ensure GPS has good accuracy before saving. Move to an open area if needed."
+            android:textSize="12sp"
+            android:textColor="@color/secondary_text"
+            android:textStyle="italic"
+            android:padding="12dp"
+            android:background="#E3F2FD"
+            android:layout_marginBottom="16dp"/>
+
     </LinearLayout>
 
-</ScrollView>
+</androidx.core.widget.NestedScrollView>
